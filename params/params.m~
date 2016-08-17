@@ -1,0 +1,12 @@
+%main parameter file for 2d coarse-graining
+
+%boundary conditions
+boundaryConditions;
+
+%initialize domain
+dFine = Domain(, 4, 1, 1);
+dFine = setNodalCoordinates(dFine, physical);
+dFine = setBvec(dFine);
+
+%physical params, boundary conditions etc.
+physicalParams;
