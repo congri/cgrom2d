@@ -1,7 +1,6 @@
 classdef Domain
     %class describing the finite element domain
-    
-    
+
     properties (SetAccess = private)
         
         nElX = 10;                  %number of finite elements in each direction
@@ -41,8 +40,7 @@ classdef Domain
         Equations
         LocalNode
         kIndex
-        
-        
+  
     end
     
     methods
