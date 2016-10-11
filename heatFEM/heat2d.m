@@ -33,18 +33,18 @@ Out.naturalTemperatures = Out.globalStiffness\Out.globalForce;
 Tf = zeros(domain.totalNodeNumber,1);
 
 Tf(domain.id) = Out.naturalTemperatures;
-if(strcmp(domain.boundaries(1),'essential'))
-    Tf(1:(domain.nElX + 1)) = physical.Tb(1);
-end
-if(strcmp(domain.boundaries(2),'essential'))
-   Tf((domain.nElX + 1):(domain.nElX + 1):(domain.nElX + 1)*(domain.nElY + 1)) = physical.Tb(2);
-end
-if(strcmp(domain.boundaries(3),'essential'))
-    Tf((domain.nElY*(domain.nElX + 1) + 1):(domain.nElY + 1)*(domain.nElX + 1)) = physical.Tb(3);
-end
-if(strcmp(domain.boundaries(4),'essential'))
-   Tf(1:(domain.nElX + 1):(domain.nElX + 1)*(domain.nElY + 1)) = physical.Tb(4); 
-end
+% if(strcmp(domain.boundaries(1), 'essential'))
+%     Tf(1:(domain.nElX + 1)) = physical.Tb(1);
+% end
+% if(strcmp(domain.boundaries(2),'essential'))
+%    Tf((domain.nElX + 1):(domain.nElX + 1):(domain.nElX + 1)*(domain.nElY + 1)) = physical.Tb(2);
+% end
+% if(strcmp(domain.boundaries(3),'essential'))
+%     Tf((domain.nElY*(domain.nElX + 1) + 1):(domain.nElY + 1)*(domain.nElX + 1)) = physical.Tb(3);
+% end
+% if(strcmp(domain.boundaries(4),'essential'))
+%    Tf(1:(domain.nElX + 1):(domain.nElX + 1)*(domain.nElY + 1)) = physical.Tb(4); 
+% end
 
 Tff = zeros(domain.nElX + 1, domain.nElY + 1);
 

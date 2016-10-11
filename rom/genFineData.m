@@ -10,7 +10,7 @@ for i = 1:size(x, 2)
     PhiArray(:,:,i) = designMatrix(phi, x(:, i), dFine, dCoarse);
 end
 
-Tf = zeros(dFine.nElX + 1, dFine.nElY + 1, fineCond.nSamples);
+Tf = zeros(dFine.nEq, fineCond.nSamples);
 control.plt = 0;
 for i = 1:fineCond.nSamples
     Dfine = zeros(2, 2, dFine.nEl);
@@ -18,7 +18,7 @@ for i = 1:fineCond.nSamples
         Dfine(:,:,j) = x(j, i)*eye(2); %only isotropic material
     end
     [fineOut] = heat2d(dFine, physF, control, Dfine);
-    Tf(:, :, i) = fineOut.Tff;
+    Tf(:, i) = fineOut.naturalTemperatures;
 end
 
 end

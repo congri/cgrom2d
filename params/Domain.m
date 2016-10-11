@@ -6,6 +6,8 @@ classdef Domain
         nElX = 10;                  %number of finite elements in each direction
         nElY = 10;
         nEl                         %total number of elements
+        nNodes                      %total number of nodes
+        boundaryNodes               %Nodes on the domain boundary
         lx = 1;                     %domain size
         ly = 1;
         lElX                        %element size
@@ -24,8 +26,6 @@ classdef Domain
         globalNodeNumber
         %total number of nodes
         totalNodeNumber
-        %boundary condition types; {lower, right, upper, left}
-        boundaries = {'natural', 'natural', 'natural', 'essential'};
         %Shape function gradient array
         Bvec
         %essential boundary (yes or no) given local node and element number
@@ -65,13 +65,16 @@ classdef Domain
             domainObj.lElX = domainObj.lx/domainObj.nElX;
             domainObj.lElY = domainObj.ly/domainObj.nElY;
             domainObj.nEl = domainObj.nElX*domainObj.nElY;
+            domainObj.nNodes = (domainObj.nElX + 1)*(domainObj.nElY + 1);
             domainObj.AEl = domainObj.lElX*domainObj.lElY;
+            domainObj.boundaryNodes = [1:(domainObj.nElX + 1),...
+                2*(domainObj.nElX + 1):(domainObj.nElX + 1):(domainObj.nElX + 1)*(domainObj.nElY + 1),...
+                ((domainObj.nElX + 1)*(domainObj.nElY + 1) - 1):(-1):((domainObj.nElX + 1)*domainObj.nElY + 1),...
+                (domainObj.nElX + 1)*((domainObj.nElY - 1):(-1):1) + 1];
             
             domainObj.lc = get_loc_coord(domainObj);
             domainObj.globalNodeNumber = get_glob(domainObj);
             domainObj.totalNodeNumber = domainObj.globalNodeNumber(end, end - 1);
-            
-           
 
         end
         

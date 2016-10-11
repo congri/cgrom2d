@@ -1,19 +1,19 @@
 function out = plotHeatMap(X, Y, Tff, domain, physical)
 f = figure('name','2D heat map');
-set(f, 'Position', [10, 350, 720, 540]);
+% set(f, 'Position', [10, 350, 720, 540]);
 contourf(X,Y,Tff,256,'LineColor','none');
 % h = pcolor(X,Y,Tff);
-% axis square
+axis square
 % axis off
 % set(h, 'edgecolor', 'none')
 title('2D heat map');
 xlabel('x');
 ylabel('y');
-cb = colorbar;
-ylabel(cb,'T');
+% cb = colorbar;
+% ylabel(cb,'T');
 set(gca,'FontSize',14) 
-colormap('jet')
-dim = [.15 .6 .3 .3];
+% colormap('jet')
+dim = [.25 .6 .4 .3];
 %concatenate textbox string
 if(strcmp(domain.boundaries(1),'essential'))
     s = 'T_{lo} =';
