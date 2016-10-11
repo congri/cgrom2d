@@ -1,54 +1,72 @@
-function [log_p, Tc] = log_p_cf(Tf, dCoarse, physC, W, S, conductivityC)
+function [log_p, d_log_p, Tc] = log_p_cf(Tf_i, domainc, physicalc, conductivity, theta_cf)
 %Coarse-to-fine map
 %ignore constant prefactor
 %log_p = -.5*logdet(S, 'chol') - .5*(Tf - mu)'*(S\(Tf - mu));
 %diagonal S
 
-Dcoarse = zeros(2, 2, dCoarse.nEl);
-for j = 1:dCoarse.nEl
-    Dcoarse(:,:,j) = conductivityC(j)*eye(2); %only isotropic material
+W = theta_cf.W;
+S = theta_cf.S;
+D = zeros(2, 2, domainc.nEl);
+control.plt = false;
+%Conductivity matrix D, only consider isotropic materials here
+for j = 1:domainc.nEl
+    D(:, :, j) =  conductivity(j)*eye(2);
 end
-control.plt = 0;
-[coarseOut] = heat2d(dCoarse, physC, control, Dcoarse);
-%coarse nodal temperatures as a vector
-Tc = coarseOut.naturalTemperatures;
-WTc = W*Tc;
+FEMout = heat2d(domainc, physicalc, control, D);
 
-
+WTc = W*FEMout.Tff(:);
 %only for diagonal S!
 assert(isdiag(S), 'Error: matrix S not diagonal');
 Sinv = diag(1./diag(S));
-log_p = -.5*sum(log(diag(S))) - .5*(Tf - WTc)'*(Sinv*(Tf - WTc));
+log_p = -.5*sum(log(diag(S))) - .5*(Tf_i - WTc)'*(Sinv*(Tf_i - WTc));
+
+if nargout > 1
+    %Gradient of FEM equation system w.r.t. conductivities
+    d_r = FEMgrad(FEMout, domainc, physicalc, conductivity);
+    %We need gradient of r w.r.t. log conductivities X, multiply each row with resp. conductivity
+    d_rx = diag(conductivity)*d_r;
+    Tc = FEMout.Tff';
+    Tc = Tc(:);
+    adjoints = get_adjoints(FEMout.globalStiffness, theta_cf, Tc, domainc);
+    d_log_p = - d_rx*adjoints;
+end
 
 
 
 
 
 
-%gradient computation
-% if nargout > 1
-%     lambda = get_adjoints(K, W, Tc, Tf, 0*Tf, S, Cmesh);
-%     d_log_p = - d_r'*lambda;
+% [Tc, d_r, K] = FEMmain(domainc, heatSource, boundary);
+% 
+% WTc = W*Tc;
+% 
+% log_p = -.5*sum(log(diag(S))) - .5*(Tf_i - WTc)'*(Sinv*(Tf_i - WTc));
+% 
+% if nargout > 1  %gradient computation
+%     %d_r is derivative w.r.t. conductivity lambda. we want derivative w.r.t. x = log(lambda).
+%     d_rx = d_r*diag(domainc.conductivity);
+%     lambda = get_adjoints(K, W, Tc, Tf_i, 0*Tf_i, S, domainc);
+%     d_log_p = - d_rx'*lambda;
 %     
 %     %Finite difference gradient check
 %     FDcheck = false;
-%     d = 1e-6;
+%     d = 1e-3;
 %     if FDcheck
-%         d_log_pFD = zeros(Cmesh.N_el, 1);
-%         CmeshFD = Cmesh;
-%         for i = 1:Cmesh.N_el
-%             dXq = zeros(Cmesh.N_el, 1);
+%         d_log_pFD = zeros(domainc.N_el, 1);
+%         CmeshFD = domainc;
+%         for i = 1:domainc.N_el
+%             dXq = zeros(domainc.N_el, 1);
 %             dXq(i) = d;
-%             CmeshFD.conductivity = Cmesh.conductivity + dXq;
+%             CmeshFD.conductivity = domainc.conductivity + domainc.conductivity.*dXq;
 %             TcFD = FEMmain(CmeshFD, heatSource, boundary);
 %             muFD = W*TcFD;
-%             log_pFD = -.5*sum(log(diag(S))) - .5*(Tf - muFD)'*(Sinv*(Tf - muFD));
+%             log_pFD = -.5*sum(log(diag(S))) - .5*(Tf_i - muFD)'*(Sinv*(Tf_i - muFD));
 %             d_log_pFD(i) = (log_pFD - log_p)/d;
 %         end 
 %         
 %         relGrad = d_log_pFD./d_log_p
-%         d_log_p
-%         d_log_pFD
+% %         d_log_p
+% %         d_log_pFD
 % 
 %         if any(relGrad > 1.2) || any(relGrad < .8)
 %             relGrad

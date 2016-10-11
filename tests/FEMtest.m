@@ -4,7 +4,7 @@ addpath('~/matlab/projects/cgrom2d/params')
 addpath('~/matlab/projects/cgrom2d/heatFEM')
 addpath('~/matlab/projects/cgrom2d/plot')
 
-patchTest = false;
+patchTest = true;
 if(patchTest)
     %Test temperature field given by function handle T. FEM solver should lead to the same solution.
     %ONLY MODIFY COEFFICIENTS a, DO NOT MODIFY FUNCTIONAL FORM OF T!!! Otherwise the test will fail
@@ -81,7 +81,7 @@ if(patchTest)
 end
 
 
-convergenceTest = true;
+convergenceTest = false;
 if(convergenceTest)
     % If no parallel pool exists, create one
     N_Threads = 16;
@@ -90,10 +90,6 @@ if(convergenceTest)
         parpool('local',N_Threads);
     end
     a = [-1 2 3 -4];
-    %T and grad T only needed to generate consistent boundary conditions
-    %     T = @(x) a(1) + a(2)*x(1)^2 + a(3)*x(2) + a(4)*x(1)*x(2);
-    %     gradT = @(x) [2*a(2)*x(1) + a(4)*x(2); a(3) + a(4)*x(1)];
-    
     c = 1; %c > 0
     d = 2;
     T = @(x) d*log(norm(x + c)) + a(1) + a(2)*x(1)^2 + a(3)*x(2) + a(4)*x(1)*x(2);
@@ -156,10 +152,10 @@ if(convergenceTest)
     out = heat2d(domain{k}, physical{k}, control, Dc);
         FEMtemperatureField{k} = out.Tff;
         difference(k) = sqrt(sum(sum((testTemperatureField{k} - FEMtemperatureField{k}).^2)))/numel(testTemperatureField{k});
-        nElements(k) = domain{k}.nEl;
+        nElementsX(k) = domain{k}.nElX;
     end
     figure
-    plot(nElements, difference)
+    loglog(nElementsX, difference)
     xlabel('Number of elements')
     ylabel('Root mean square difference')
     title('Convergence to true solution')

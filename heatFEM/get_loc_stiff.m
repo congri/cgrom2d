@@ -1,4 +1,4 @@
-function [k] = get_loc_stiff(e,lc,D)
+function [k] = get_loc_stiff(e, lc, D)
 %Gives the local stiffness matrix
 
 %Heat conductivity matrix in that element
