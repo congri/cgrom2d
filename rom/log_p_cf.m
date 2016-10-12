@@ -27,8 +27,34 @@ if nargout > 1
     d_rx = diag(conductivity)*d_r;
     Tc = FEMout.Tff';
     Tc = Tc(:);
-    adjoints = get_adjoints(FEMout.globalStiffness, theta_cf, Tc, domainc);
+    adjoints = get_adjoints(FEMout.globalStiffness, theta_cf, Tc, domainc, Tf_i);
     d_log_p = - d_rx*adjoints;
+    
+    
+    %Finite difference gradient check
+    FDcheck = false;
+    if FDcheck
+        disp('Gradient check log p_cf')
+        d = 1e-5;
+        FDgrad = zeros(domainc.nEl, 1);
+        for e = 1:domainc.nEl
+            conductivityFD = conductivity;
+            conductivityFD(e) = conductivityFD(e) + d;
+            
+            DFD = zeros(2, 2, domainc.nEl);
+            for j = 1:domainc.nEl
+                DFD(:, :, j) =  conductivityFD(j)*eye(2);
+            end
+            FEMoutFD = heat2d(domainc, physicalc, control, DFD);
+            
+            WTcFD = W*FEMoutFD.Tff(:);
+            log_pFD = -.5*sum(log(diag(S))) - .5*(Tf_i - WTcFD)'*(Sinv*(Tf_i - WTcFD));
+            FDgrad(e) = conductivity(e)*(log_pFD - log_p)/d;
+        end
+        relgrad = FDgrad./d_log_p
+    end
+    
+    
 end
 
 

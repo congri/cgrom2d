@@ -1,5 +1,5 @@
 function [log_q, d_log_q, Tc] = log_q_i(Xi, Tf_i, theta_cf, theta_c, Phi,...
-    domainf, domainc, physicalc, W)
+    domainf, domainc, physicalc)
 
 conductivity = exp(Xi);
 if any(conductivity < 1e-6)
@@ -38,21 +38,33 @@ end
 %Finite difference gradient check
 FDcheck = false;
 if FDcheck
-    d = 1e-4;
-    gradFD = zeros(Cmesh.N_el, 1);
-    for i = 1:Cmesh.N_el
-        dXi = zeros(Cmesh.N_el, 1);
+    disp('Gradient check log q_i')
+    d = 1e-3;
+    gradFD = zeros(domainc.nEl, 1);
+    for i = 1:domainc.nEl
+        dXi = zeros(domainc.nEl, 1);
         dXi(i) = d;
-        Cmesh.conductivity = exp(Xi) + exp(Xi).*dXi;
+        conductivityFD = conductivity + conductivity.*dXi;
         
-        [lg_p_c, d_lg_p_c] = log_p_c(Xi + dXi, Phi, theta_c.theta, theta_c.sigma);
-        [lg_p_cf, d_lg_p_cf] = log_p_cf(Tf_i, Cmesh, heatSource, boundary, W, theta_cf.S);
+        [lg_p_c, ~] = log_p_c(Xi + dXi, Phi, theta_c.theta, theta_c.sigma);
+        [lg_p_cf, ~] = log_p_cf(Tf_i, domainc, physicalc, conductivityFD, theta_cf);
         
         log_qFD = lg_p_cf + lg_p_c;
         gradFD(i) = (log_qFD - log_q)/d;
     end
     
     relgrad = gradFD./d_log_q
+    if(any(abs(relgrad - 1) > .1))
+        %for small log q, it is possible that the FD gradient is unprecise
+        conductivity
+        conductivityFD
+        Xi
+        XiFD = Xi + dXi
+        d_log_q
+        d_lg_p_c
+        d_lg_p_cf
+        pause 
+    end
     
 end
 

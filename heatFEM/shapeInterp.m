@@ -1,0 +1,49 @@
+function [W] = shapeInterp(domainc, domainf)
+
+%E(e) gives coarse element of fine element e
+% [E] = get_coarse_el(domainf.nEl, domainc.nEl, 1:domainf.nEl);
+
+    function [N, E] = shapeFunctionValues(x)
+        %coarse element
+        row = floor(x(2)/domainc.lElY) + 1;
+        %upper boundary of domain
+        if row > domainc.nElY
+            row = domainc.nElY;
+        end
+        col = floor(x(1)/domainc.lElX) + 1;
+        %right boundary of domain
+        if col > domainc.nElX
+            col = domainc.nElX;
+        end
+        %E is coarse element x is in
+        E = (row - 1)*(domainc.nElX) + col;
+        
+        %shape function values
+        N(1) =(1/domainc.AEl)*(x(1) - domainc.lc(E, 2, 1))*(x(2) - domainc.lc(E, 4, 2));
+        N(2,1) = -(1/domainc.AEl)*(x(1) - domainc.lc(E, 1, 1))*(x(2) - domainc.lc(E, 4, 2));
+        N(3) = (1/domainc.AEl)*(x(1) - domainc.lc(E, 1, 1))*(x(2) - domainc.lc(E, 1, 2));
+        N(4) = -(1/domainc.AEl)*(x(1) - domainc.lc(E, 2, 1))*(x(2) - domainc.lc(E, 1, 2));
+    end
+
+W = zeros(domainf.nNodes, domainc.nNodes);
+%loop through all fine elements
+for e = 1:domainf.nEl
+    %loop through local nodes
+    for ln = 1:4
+        %coordinate of fine node
+        x(1) = domainf.lc(e, ln, 1);
+        x(2) = domainf.lc(e, ln, 2);
+        [N, E] = shapeFunctionValues(x);
+        
+        %row index of W
+        r = domainf.globalNodeNumber(e, ln);
+        %column indices of W, 4 for every local node of E
+        c = domainc.globalNodeNumber(E, :);
+        
+        %Assign shape function weights to matrix W
+        W(r, c) = N;
+    end
+end
+
+end
+

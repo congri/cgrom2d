@@ -33,8 +33,10 @@ for i = 1:4*nc
         physicalc.qb(i) = qbtemp(1);
     end
 end
+%ATTENTION: BOUNDARY TYPES OF COARSE AND FINE MODELS HAVE TO BE THE SAME ON CORRESPONDING BOUNDARIES
 physicalc.boundaryType = true(1, 4*nc);         %true for essential node, false for natural node
-%     physicalc.boundaryType(2:nc) = false;           %lower boundary is natural
+physicalc.boundaryType(2:nc) = false;           %lower boundary is natural
+physicalc.boundaryType((nc + 2):(2*nc)) = false;%right boundary is natural
 physicalc.essentialNodes = domainc.boundaryNodes(physicalc.boundaryType);
 physicalc.naturalNodes = domainc.boundaryNodes(~physicalc.boundaryType);
 %Assign heat source field
@@ -71,8 +73,10 @@ for i = 1:4*nf
         physicalf.qb(i) = qbtemp(1);
     end
 end
+%ATTENTION: BOUNDARY TYPES OF COARSE AND FINE MODELS HAVE TO BE THE SAME ON CORRESPONDING BOUNDARIES
 physicalf.boundaryType = true(1, 4*nf);         %true for essential node, false for natural node
-%     physicalf.boundaryType(2:nf) = false;           %lower boundary is natural
+physicalf.boundaryType(2:nf) = false;           %lower boundary is natural
+physicalf.boundaryType((nf + 2):(2*nf)) = false;%right boundary is natural
 physicalf.essentialNodes = domainf.boundaryNodes(physicalf.boundaryType);
 physicalf.naturalNodes = domainf.boundaryNodes(~physicalf.boundaryType);
 %Assign heat source field

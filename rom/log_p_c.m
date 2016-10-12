@@ -19,7 +19,8 @@ if nargout > 1
     %Finite difference gradient check
     FDcheck = false;
     if FDcheck
-        d = 1e-3;
+        disp('Gradient check log p_c')
+        d = 1e-5;
         d_log_pFD = 0*Xq;
         for i = 1:size(Xq, 1)
             dXq = 0*Xq;
@@ -27,8 +28,8 @@ if nargout > 1
             d_log_pFD(i) = (- size(Xq + dXq, 1)*log(sigma)...
                 - (1/(2*sigma^2))*(Xq + dXq - mu)'*(Xq + dXq - mu) - log_p)/d;
         end 
-        d_log_pFD
-        d_log_p
+%         d_log_pFD
+%         d_log_p
         relGrad = d_log_pFD./d_log_p
     end
 end

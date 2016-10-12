@@ -7,6 +7,9 @@ addpath('./params')
 addpath('./heatFEM')
 addpath('./rom')
 addpath('./computation')
+addpath('./FEMgradient')
+addpath('./MCMCsampler')
+addpath('./optimization')
 
 rng('shuffle')  %system time seed
 
@@ -54,9 +57,9 @@ collectData;
 for k = 2:(EM.maxIterations + 1)
     %% Test run for step sizes
     disp('test sampling...')
-    parfor i = 1:fineData.nSamples
+    for i = 1:fineData.nSamples
         log_qi{i} = @(Xi) log_q_i(Xi, Tf(:, i), theta_cf, theta_c,...
-            PhiArray(:, :, i), domainf, domainc, heatSource, boundary, theta_cf.W);
+            PhiArray(:, :, i), domainf, domainc, physicalc);
         %find maximum of qi for thermalization
         %start value has some randomness to drive transitions between local optima
         X_start{i} = normrnd(MCMC(i).Xi_start, .01);
@@ -89,8 +92,9 @@ for k = 2:(EM.maxIterations + 1)
     
     disp('actual sampling...')
     %% Generate samples from every q_i
-    parfor i = 1:fineData.nSamples
-        log_qi{i} = @(Xi) log_q_i(Xi, Tf(:,i), theta_cf, theta_c, PhiArray(:,:,i), Fmesh, Cmesh, heatSource, boundary, theta_cf.W);
+    for i = 1:fineData.nSamples
+        log_qi{i} = @(Xi) log_q_i(Xi, Tf(:, i), theta_cf, theta_c,...
+            PhiArray(:, :, i), domainf, domainc, physicalc);
         %sample from every q_i
         out(i) = MCMCsampler(log_qi{i}, Xmax{i}, MCMC(i));
         %avoid very low acceptances
@@ -123,23 +127,26 @@ for k = 2:(EM.maxIterations + 1)
         %for S
         %Tc_samples(:,:,i) contains coarse nodal temperature samples (1 sample == 1 column) for full order data
         %sample i
-        Tc_samples(:, :, i) = reshape(cell2mat(out(i).data), nCoarse + 1, MCMC(i).nSamples);
+        Tc_samples(:, :, i) = reshape(cell2mat(out(i).data), domainc.nNodes, MCMC(i).nSamples);
         %only valid for diagonal S here!
         p_cf_exponent(:, i) = mean((repmat(Tf(:, i) - theta_cf.mu, 1, MCMC(i).nSamples) - theta_cf.W*Tc_samples(:, :, i)).^2, 2);
         
-        %First factor for matrix W
-        Wa(:, :, i) = (Tf(:, i) - theta_cf.mu)*mean(Tc_samples(:, :, i), 2)';
+        if(~Winterp)
+            %still has to be generalized for 2d
+            %First factor for matrix W
+            Wa(:, :, i) = (Tf(:, i) - theta_cf.mu)*mean(Tc_samples(:, :, i), 2)';
+        end
     end
-        
+    
     %% Compute params of p_cf
-    Tc_dyadic_mean = TcDyadicMean(Tc_samples, fineData.nSamples, MCMC);
-    Wa_mean = mean(Wa, 3);
     if(~Winterp)
+        %this still has to be generalized to 2d
+        Tc_dyadic_mean = TcDyadicMean(Tc_samples, fineData.nSamples, MCMC);
+        Wa_mean = mean(Wa, 3);
         theta_cf.W = compW(Tc_dyadic_mean,  Wa_mean,...
             inv(theta_cf.S), theta_cf.W, paramIndices, constIndices);
     end
     
-    %     Wout = theta_cf.W
     %decelerate convergence of S
     theta_cf.S = (1 - mix_S)*diag(mean(p_cf_exponent, 2)) + mix_S*theta_cf.S + (1e-6)*eye(size(theta_cf.S, 1));
     
@@ -152,13 +159,10 @@ for k = 2:(EM.maxIterations + 1)
     end
 
     disp('M-step: find optimal params')
-    [theta_c] = optTheta_c(theta_c, fineData, nCoarse, XNormSqMean,...
+    [theta_c] = optTheta_c(theta_c, fineData, domainc.nEl, XNormSqMean,...
         sumPhiTXmean, sumPhiSq, sumPhiSqInv, mix_sigma, prior_type, prior_hyperparam);
     disp('M-step done, current theta:')
-    
-    
-%     [zOpt] = optNewPhi(XMean, x, theta_c.theta, PhiArray, nFine, nCoarse)
-    
+        
     curr_theta = theta_c.theta
     curr_sigma = theta_c.sigma
     
@@ -172,6 +176,7 @@ for k = 2:(EM.maxIterations + 1)
     S = diag(theta_cf.S)'
     
     if(mod(k - 1, basisUpdateGap) == 0)
+        %this still needs to be generalized for 2d
         disp('Updating basis functions phi in p_c...')
 
 %         [thetaTildeOpt, zOpt] = optNewPhi(XMean, x, theta_c.theta, PhiArray, nFine, nCoarse);
@@ -203,9 +208,9 @@ for k = 2:(EM.maxIterations + 1)
         end
         
         % Compute and store design matrix for each data point
-        PhiArray = zeros(nCoarse, size(phi, 1), size(x, 2));
+        PhiArray = zeros(domainc.nEl, size(phi, 1), fineData.nSamples);
         for i = 1:size(x, 2)
-            PhiArray(:,:,i) = designMatrix(phi, exp(x(:, i)), nFine, nCoarse);
+            PhiArray(:,:,i) = designMatrix(phi, x, domainf, domainc);
         end
         % Compute inverse of sum_i Phi^T(x_i)^Phi(x_i)
         sumPhiSq = zeros(size(phi, 1), size(phi, 1));

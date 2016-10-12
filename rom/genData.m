@@ -31,8 +31,9 @@ for i = 1:fineData.nSamples
     end
     FEMout = heat2d(domain, physical, control, D);
     %Store fine temperatures as a vector Tf. Use reshape(Tf(:, i), domain.nElX + 1, domain.nElY + 1)
-    %to reconvert it to original temperature field
-    Tf(:, i) = FEMout.Tff(:);
+    %and then transpose result to reconvert it to original temperature field
+    Ttemp = FEMout.Tff';
+    Tf(:, i) = Ttemp(:);
 end
 
 end
