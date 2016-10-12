@@ -1,4 +1,4 @@
-function [d_r] = FEMgrad(FEMout, domain, physical, conductivity)
+function [d_r] = FEMgrad(FEMout, domain, conductivity)
 %Compute derivatives of FEM equation system r = K*Y - F w.r.t. Lambda_e
 %ONLY VALID FOR ISOTROPIC HEAT CONDUCTIVITY MATRIX D!!!
 
@@ -9,10 +9,43 @@ for e = 1:domain.nEl
     gradLocStiff = zeros(4, 4, domain.nEl);
     gradLocStiff(:, :, e) = FEMout.localStiffness(:, :, e)/conductivity(e);     %gradient of local stiffnesses
     gradK = get_glob_stiff2(domain, gradLocStiff);
-    gradF = get_glob_force(domain, physical, gradLocStiff);
+    gradF = get_glob_force_gradient(domain, gradLocStiff);
     
     d_r(e, :) = (gradK*FEMout.naturalTemperatures - gradF)';
+    
+    
+    
+    
+    
+    %Finite difference gradient check
+    FDcheck = false;
+    if FDcheck
+        disp('Gradient check K and F')
+        d = 1e-4;
+        FDgrad = zeros(domain.nEl, 1);
+        conductivityFD = conductivity;
+        conductivityFD(e) = conductivityFD(e) + d;
+        
+        DFD = zeros(2, 2, domain.nEl);
+        for j = 1:domain.nEl
+            DFD(:, :, j) =  conductivityFD(j)*eye(2);
+        end
+        control.plt = false;
+        FEMoutFD = heat2d(domain, physical, control, DFD);
+        
+        gradKFD = (FEMoutFD.globalStiffness - FEMout.globalStiffness)/d;
+%         gradK
+        relgradK = gradKFD./gradK
+        
+        gradFFD = (FEMoutFD.globalForce - FEMout.globalForce)/d
+        gradF
+        relgradF = gradFFD./gradF
+        pause
+    end
 end
+
+
+
 
 
 end

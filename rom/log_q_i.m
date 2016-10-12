@@ -39,7 +39,7 @@ end
 FDcheck = false;
 if FDcheck
     disp('Gradient check log q_i')
-    d = 1e-3;
+    d = 1e-5;
     gradFD = zeros(domainc.nEl, 1);
     for i = 1:domainc.nEl
         dXi = zeros(domainc.nEl, 1);
@@ -55,6 +55,8 @@ if FDcheck
     
     relgrad = gradFD./d_log_q
     if(any(abs(relgrad - 1) > .1))
+        %Note: if d_log_q << d_log_p_c, d_log_p_cf, then this might be due to numerical issues, i.e.
+        %FD gradient is unprecise
         %for small log q, it is possible that the FD gradient is unprecise
         conductivity
         conductivityFD

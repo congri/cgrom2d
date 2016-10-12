@@ -13,7 +13,7 @@ boundaryConditions;
 %% Finescale data params
 fineData.genData = true;    %generate new dataset?
 fineData.dist = 'binary';   %uniform, gaussian or binary (dist of log conductivity)
-fineData.nSamples = 1;
+fineData.nSamples = 16;
 if strcmp(fineData.dist, 'gaussian')
     fineData.mu = 1.2;      %mean of log of lambda
     fineData.sigma = .3;    %sigma of log of lambda
@@ -39,7 +39,7 @@ nBasis = numel(phi);
 
 %% Object containing EM optimization params and stats
 EM = EMstats;
-basisUpdateGap = 2;        %After this number of iterations, include new basis function in p_c
+basisUpdateGap = 40;        %After this number of iterations, include new basis function in p_c
 EM = EM.setMaxIterations(1*basisUpdateGap - 1);
 EM = EM.prealloc(fineData, domainf, domainc, nBasis);           %preallocation of data arrays
 
@@ -70,10 +70,10 @@ MCMC.method = 'MALA';                               %proposal type: randomWalk, 
 MCMC.seed = 6;
 MCMC.nThermalization = 0;                           %thermalization steps
 MCMC.nSamples = 50;                                 %number of samples
-MCMC.nGap = 500;                                    %decorrelation gap
+MCMC.nGap = 100;                                    %decorrelation gap
 MCMC.Xi_start = 20*ones(domainc.nEl, 1);
 %only for random walk
-MCMC.MALA.stepWidth = .01;
+MCMC.MALA.stepWidth = .5;
 stepWidth = 2e-0;
 MCMC.randomWalk.proposalCov = stepWidth*eye(domainc.nEl);   %random walk proposal covariance
 MCMC = repmat(MCMC, fineData.nSamples, 1);
@@ -82,12 +82,12 @@ MCMC = repmat(MCMC, fineData.nSamples, 1);
 MCMCstepWidth = MCMC;
 for i = 1:fineData.nSamples
     MCMCstepWidth(i).nSamples = 2;
-    MCMCstepWidth(i).nGap = 1000;
+    MCMCstepWidth(i).nGap = 500;
 end
 
 %% Control convergence velocity - take weighted mean of adjacent parameter estimates
 mix_sigma = 0;
-mix_S = 0.8;
+mix_S = 0.2;
 mix_W = 0;
 mix_theta = 0;
 

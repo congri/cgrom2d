@@ -47,6 +47,7 @@ domainc = setBvec(domainc);
 %Force contributions due to heat flux and source
 physicalc.fs = get_heat_source(physicalc.heatSourceField, domainc);
 physicalc.fh = get_flux_force(domainc, physicalc);
+physicalc.floc = physicalc.fs + physicalc.fh;
 
 
 %% file boundary values
@@ -87,3 +88,4 @@ domainf = setBvec(domainf);
 %Force contributions due to heat flux and source
 physicalf.fs = get_heat_source(physicalf.heatSourceField, domainf);
 physicalf.fh = get_flux_force(domainf, physicalf);
+physicalf.floc = physicalf.fs + physicalf.fh;

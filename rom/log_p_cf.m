@@ -14,28 +14,28 @@ for j = 1:domainc.nEl
 end
 FEMout = heat2d(domainc, physicalc, control, D);
 
-WTc = W*FEMout.Tff(:);
+Tc = FEMout.Tff';
+Tc = Tc(:);
+WTc = W*Tc;
 %only for diagonal S!
 assert(isdiag(S), 'Error: matrix S not diagonal');
 Sinv = diag(1./diag(S));
-log_p = -.5*sum(log(diag(S))) - .5*(Tf_i - WTc)'*(Sinv*(Tf_i - WTc));
+log_p = -.5*sum(log(diag(S))) - .5*(Tf_i - theta_cf.mu - WTc)'*(Sinv*(Tf_i - theta_cf.mu - WTc));
 
 if nargout > 1
     %Gradient of FEM equation system w.r.t. conductivities
-    d_r = FEMgrad(FEMout, domainc, physicalc, conductivity);
+    d_r = FEMgrad(FEMout, domainc, conductivity);
     %We need gradient of r w.r.t. log conductivities X, multiply each row with resp. conductivity
     d_rx = diag(conductivity)*d_r;
-    Tc = FEMout.Tff';
-    Tc = Tc(:);
     adjoints = get_adjoints(FEMout.globalStiffness, theta_cf, Tc, domainc, Tf_i);
     d_log_p = - d_rx*adjoints;
-    
+
     
     %Finite difference gradient check
     FDcheck = false;
     if FDcheck
         disp('Gradient check log p_cf')
-        d = 1e-5;
+        d = 1e-4;
         FDgrad = zeros(domainc.nEl, 1);
         for e = 1:domainc.nEl
             conductivityFD = conductivity;
@@ -46,61 +46,48 @@ if nargout > 1
                 DFD(:, :, j) =  conductivityFD(j)*eye(2);
             end
             FEMoutFD = heat2d(domainc, physicalc, control, DFD);
+            TcFD = FEMoutFD.Tff';
+            TcFD = TcFD(:);
             
-            WTcFD = W*FEMoutFD.Tff(:);
-            log_pFD = -.5*sum(log(diag(S))) - .5*(Tf_i - WTcFD)'*(Sinv*(Tf_i - WTcFD));
+            WTcFD = W*TcFD;
+            log_pFD = -.5*sum(log(diag(S))) - .5*(Tf_i - theta_cf.mu - WTcFD)'*(Sinv*(Tf_i - theta_cf.mu - WTcFD));
             FDgrad(e) = conductivity(e)*(log_pFD - log_p)/d;
         end
         relgrad = FDgrad./d_log_p
-    end
+%         d_r
+%         d_rx
+%         adjoints
+%         d_log_p
+%         FDgrad
+%         conductivity
+% 
+%         conductivityFDcheck = conductivity + .001*(FDgrad./conductivity);
+%         DFDcheck = zeros(2, 2, domainc.nEl);
+%         for j = 1:domainc.nEl
+%             DFDcheck(:, :, j) =  conductivityFDcheck(j)*eye(2);
+%         end
+%         FEMoutFDcheck = heat2d(domainc, physicalc, control, DFDcheck);
+%         TcFDcheck = FEMoutFDcheck.Tff';
+%         TcFDcheck = TcFDcheck(:);
+%         WTcFDcheck = W*TcFDcheck;
+%         log_pFDcheck = -.5*sum(log(diag(S))) - .5*(Tf_i - WTcFDcheck)'*(Sinv*(Tf_i - WTcFDcheck));
+%         checkFD = log_pFDcheck - log_p
+%         
+%         conductivitycheck = conductivity + .001*(d_log_p./conductivity);
+%         Dcheck = zeros(2, 2, domainc.nEl);
+%         for j = 1:domainc.nEl
+%             Dcheck(:, :, j) =  conductivitycheck(j)*eye(2);
+%         end
+%         FEMoutcheck = heat2d(domainc, physicalc, control, Dcheck);
+%         Tccheck = FEMoutcheck.Tff';
+%         Tccheck = Tccheck(:);
+%         WTccheck = W*Tccheck;
+%         log_pcheck = -.5*sum(log(diag(S))) - .5*(Tf_i - WTccheck)'*(Sinv*(Tf_i - WTccheck));
+%         check = log_pcheck - log_p
+    end %FD gradient check
     
     
 end
-
-
-
-
-
-
-% [Tc, d_r, K] = FEMmain(domainc, heatSource, boundary);
-% 
-% WTc = W*Tc;
-% 
-% log_p = -.5*sum(log(diag(S))) - .5*(Tf_i - WTc)'*(Sinv*(Tf_i - WTc));
-% 
-% if nargout > 1  %gradient computation
-%     %d_r is derivative w.r.t. conductivity lambda. we want derivative w.r.t. x = log(lambda).
-%     d_rx = d_r*diag(domainc.conductivity);
-%     lambda = get_adjoints(K, W, Tc, Tf_i, 0*Tf_i, S, domainc);
-%     d_log_p = - d_rx'*lambda;
-%     
-%     %Finite difference gradient check
-%     FDcheck = false;
-%     d = 1e-3;
-%     if FDcheck
-%         d_log_pFD = zeros(domainc.N_el, 1);
-%         CmeshFD = domainc;
-%         for i = 1:domainc.N_el
-%             dXq = zeros(domainc.N_el, 1);
-%             dXq(i) = d;
-%             CmeshFD.conductivity = domainc.conductivity + domainc.conductivity.*dXq;
-%             TcFD = FEMmain(CmeshFD, heatSource, boundary);
-%             muFD = W*TcFD;
-%             log_pFD = -.5*sum(log(diag(S))) - .5*(Tf_i - muFD)'*(Sinv*(Tf_i - muFD));
-%             d_log_pFD(i) = (log_pFD - log_p)/d;
-%         end 
-%         
-%         relGrad = d_log_pFD./d_log_p
-% %         d_log_p
-% %         d_log_pFD
-% 
-%         if any(relGrad > 1.2) || any(relGrad < .8)
-%             relGrad
-%             pause
-%         end
-%         
-%     end
-% end
 
 end
 

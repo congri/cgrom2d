@@ -16,7 +16,6 @@ rng('shuffle')  %system time seed
 %% Load params
 params;
 
-
 %% Generate finescale dataset
 if fineData.genData
     [x, Tf] = genData(domainf, physicalf, fineData);
@@ -57,7 +56,7 @@ collectData;
 for k = 2:(EM.maxIterations + 1)
     %% Test run for step sizes
     disp('test sampling...')
-    for i = 1:fineData.nSamples
+    parfor i = 1:fineData.nSamples
         log_qi{i} = @(Xi) log_q_i(Xi, Tf(:, i), theta_cf, theta_c,...
             PhiArray(:, :, i), domainf, domainc, physicalc);
         %find maximum of qi for thermalization
@@ -92,7 +91,7 @@ for k = 2:(EM.maxIterations + 1)
     
     disp('actual sampling...')
     %% Generate samples from every q_i
-    for i = 1:fineData.nSamples
+    parfor i = 1:fineData.nSamples
         log_qi{i} = @(Xi) log_q_i(Xi, Tf(:, i), theta_cf, theta_c,...
             PhiArray(:, :, i), domainf, domainc, physicalc);
         %sample from every q_i
