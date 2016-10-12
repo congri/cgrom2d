@@ -1,9 +1,9 @@
 %generate boundary conditions here
 
 %% Temperature field and gradient generating the boundary conditions
-a = [-1 2 3 -4];
-c = 1; %c > 0
-d = 2;
+a = [-4 5 7 -4];
+c = .3; %c > 0
+d = 4;
 T = @(x) d*log(norm(x + c)) + a(1) + a(2)*x(1)^2 + a(3)*x(2) + a(4)*x(1)*x(2);
 gradT = @(x) [d*(x(1) + c)/norm(x + c)^2; d*(x(2) + c)/norm(x + c)^2]...
     + [2*a(2)*x(1) + a(4)*x(2); a(3) + a(4)*x(1)];

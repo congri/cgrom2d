@@ -22,7 +22,7 @@ if fineData.genData
     % Compute and store design matrix for each data point
     PhiArray = zeros(domainc.nEl, numel(phi), fineData.nSamples);
     for i = 1:fineData.nSamples
-        PhiArray(:, :, i) = designMatrix(phi, x, domainf, domainc);
+        PhiArray(:, :, i) = designMatrix(phi, x(:, i), domainf, domainc);
     end
     % Compute inverse of sum_i Phi^T(x_i)^Phi(x_i)
     sumPhiSq = zeros(size(phi, 1), size(phi, 1));
