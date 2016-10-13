@@ -3,7 +3,7 @@ function [W] = shapeInterp(domainc, domainf)
 %E(e) gives coarse element of fine element e
 % [E] = get_coarse_el(domainf.nEl, domainc.nEl, 1:domainf.nEl);
 
-    function [N, E] = shapeFunctionValues(x)
+    function [N, E] = shapeFunctionValues2(x)
         %coarse element
         row = floor(x(2)/domainc.lElY) + 1;
         %upper boundary of domain
@@ -33,7 +33,7 @@ for e = 1:domainf.nEl
         %coordinate of fine node
         x(1) = domainf.lc(e, ln, 1);
         x(2) = domainf.lc(e, ln, 2);
-        [N, E] = shapeFunctionValues(x);
+        [N, E] = shapeFunctionValues2(x);
         
         %row index of W
         r = domainf.globalNodeNumber(e, ln);

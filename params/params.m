@@ -19,7 +19,7 @@ if strcmp(fineData.dist, 'gaussian')
     fineData.sigma = .3;    %sigma of log of lambda
 elseif (strcmp(fineData.dist, 'uniform') || strcmp(fineData.dist, 'binary'))
     %for uniform & binary
-    fineData.lo = 2;
+    fineData.lo = 2;    %upper and lower bounds on conductivity lambda
     fineData.up = 100;
     contrast = fineData.up/fineData.lo;
     %for binary
@@ -34,12 +34,21 @@ end
 %% Some predefined basis functions for linear model p_c
 phi_1 = @(lambda) log(size(lambda, 1)/sum(1./lambda));
 phi_2 = @(lambda) log(mean(lambda));
-phi = {phi_1; phi_2};
+linpathphase1l2 = @(lambda) .5*linealPath(lambda, 2, 'x', 1, fineData, domainc, domainf) +...
+                            .5*linealPath(lambda, 2, 'y', 1, fineData, domainc, domainf);
+linpathphase1l3 = @(lambda) .5*linealPath(lambda, 3, 'x', 1, fineData, domainc, domainf) +...
+                            .5*linealPath(lambda, 3, 'y', 1, fineData, domainc, domainf);
+linpathphase2l2 = @(lambda) .5*linealPath(lambda, 2, 'x', 2, fineData, domainc, domainf) +...
+                            .5*linealPath(lambda, 2, 'y', 2, fineData, domainc, domainf);
+linpathphase2l3 = @(lambda) .5*linealPath(lambda, 3, 'x', 2, fineData, domainc, domainf) +...
+                            .5*linealPath(lambda, 3, 'y', 2, fineData, domainc, domainf);
+
+phi = {linpathphase1l2; linpathphase1l3; linpathphase2l2; linpathphase2l3};
 nBasis = numel(phi);
 
 %% Object containing EM optimization params and stats
 EM = EMstats;
-basisUpdateGap = 30;        %After this number of iterations, include new basis function in p_c
+basisUpdateGap = 50;        %After this number of iterations, include new basis function in p_c
 EM = EM.setMaxIterations(1*basisUpdateGap - 1);
 EM = EM.prealloc(fineData, domainf, domainc, nBasis);           %preallocation of data arrays
 
@@ -58,22 +67,22 @@ theta_c.theta = (1/size(phi, 1))*ones(size(phi, 1), 1);
 theta_c.sigma = 2;
 
 %what kind of prior for theta_c
-prior_type = 'none';                  %hierarchical_gamma, hierarchical_laplace, laplace, gaussian or none
+prior_type = 'hierarchical_gamma';                  %hierarchical_gamma, hierarchical_laplace, laplace, gaussian or none
 %prior hyperparams; obsolete for no prior
 % prior_hyperparam = 100*eye(size(phi, 1));         %variance of prior gaussian
 % prior_hyperparam = 1;                             %Exponential decay parameter for laplace
-prior_hyperparam = [0; .01];                      %parameters a, b of gamma hyperprior, a, b > 0, but not too small.
+prior_hyperparam = [0; .01];                        %parameters a, b of gamma hyperprior, a, b > 0, but not too small.
                                                     %The smaller b, the more aggressive sparsity
 
 %% MCMC options
-MCMC.method = 'MALA';                               %proposal type: randomWalk, nonlocal or MALA
+MCMC.method = 'MALA';                                %proposal type: randomWalk, nonlocal or MALA
 MCMC.seed = 6;
-MCMC.nThermalization = 0;                           %thermalization steps
-MCMC.nSamples = 50;                                 %number of samples
-MCMC.nGap = 100;                                    %decorrelation gap
+MCMC.nThermalization = 0;                            %thermalization steps
+MCMC.nSamples = 200;                                 %number of samples
+MCMC.nGap = 100;                                     %decorrelation gap
 MCMC.Xi_start = 20*ones(domainc.nEl, 1);
 %only for random walk
-MCMC.MALA.stepWidth = .1;
+MCMC.MALA.stepWidth = .05;
 stepWidth = 2e-0;
 MCMC.randomWalk.proposalCov = stepWidth*eye(domainc.nEl);   %random walk proposal covariance
 MCMC = repmat(MCMC, fineData.nSamples, 1);
@@ -87,7 +96,7 @@ end
 
 %% Control convergence velocity - take weighted mean of adjacent parameter estimates
 mix_sigma = 0;
-mix_S = 0.2;
+mix_S = 0.3;
 mix_W = 0;
 mix_theta = 0;
 

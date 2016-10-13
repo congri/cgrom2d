@@ -1,4 +1,4 @@
-function [x, Tf] = genData(domain, physical, fineData)
+function [cond, Tf] = genData(domain, physical, fineData)
 %Generating full order data
 
 %% Draw conductivity/ log conductivity

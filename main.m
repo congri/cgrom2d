@@ -18,11 +18,11 @@ params;
 
 %% Generate finescale dataset
 if fineData.genData
-    [x, Tf] = genData(domainf, physicalf, fineData);
+    [cond, Tf] = genData(domainf, physicalf, fineData);
     % Compute and store design matrix for each data point
     PhiArray = zeros(domainc.nEl, numel(phi), fineData.nSamples);
     for i = 1:fineData.nSamples
-        PhiArray(:, :, i) = designMatrix(phi, x(:, i), domainf, domainc);
+        PhiArray(:, :, i) = designMatrix(phi, cond(:, i), domainf, domainc);
     end
     % Compute inverse of sum_i Phi^T(x_i)^Phi(x_i)
     sumPhiSq = zeros(size(phi, 1), size(phi, 1));
@@ -31,7 +31,7 @@ if fineData.genData
     end
     sumPhiSqInv = inv(sumPhiSq);
     % save data
-    save('./data/fineData/fineData', 'x', 'Tf', 'PhiArray', 'sumPhiSqInv');
+    save('./data/fineData/fineData', 'cond', 'Tf', 'PhiArray', 'sumPhiSqInv');
 else
     load('./data/fineData/fineData')
     sumPhiSq = inv(sumPhiSqInv);
@@ -147,7 +147,8 @@ for k = 2:(EM.maxIterations + 1)
     end
     
     %decelerate convergence of S
-    theta_cf.S = (1 - mix_S)*diag(mean(p_cf_exponent, 2)) + mix_S*theta_cf.S + (1e-6)*eye(size(theta_cf.S, 1));
+    lowerBoundS = 1e-10;
+    theta_cf.S = (1 - mix_S)*diag(mean(p_cf_exponent, 2)) + mix_S*theta_cf.S + lowerBoundS*eye(size(theta_cf.S, 1));
     
     %% Compute theta_c and sigma if there is a prior on theta_c, sigma
     
@@ -208,8 +209,8 @@ for k = 2:(EM.maxIterations + 1)
         
         % Compute and store design matrix for each data point
         PhiArray = zeros(domainc.nEl, size(phi, 1), fineData.nSamples);
-        for i = 1:size(x, 2)
-            PhiArray(:,:,i) = designMatrix(phi, x, domainf, domainc);
+        for i = 1:size(cond, 2)
+            PhiArray(:,:,i) = designMatrix(phi, cond, domainf, domainc);
         end
         % Compute inverse of sum_i Phi^T(x_i)^Phi(x_i)
         sumPhiSq = zeros(size(phi, 1), size(phi, 1));
