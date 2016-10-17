@@ -49,8 +49,8 @@ Tff = zeros(domain.nElX + 1, domain.nElY + 1);
 
 for i = 1:domain.totalNodeNumber
    Tff(i) = Tf(i);
-   if(~isnan(domain.nodalCoordinates(4,i)))
-       Tff(i) = domain.nodalCoordinates(4,i);
+   if(~isnan(domain.nodalCoordinates(4, i)))
+       Tff(i) = domain.nodalCoordinates(4, i);
    end
 end
 Tff = Tff';

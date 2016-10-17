@@ -173,7 +173,7 @@ for k = 2:(EM.maxIterations + 1)
     end
     
     
-    S = diag(theta_cf.S)'
+    mean_S = mean(diag(theta_cf.S)')
     
     if(mod(k - 1, basisUpdateGap) == 0)
         %this still needs to be generalized for 2d

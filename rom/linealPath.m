@@ -10,7 +10,7 @@ function [L] = linealPath(lambdak, pathLength, dir, phase, fineData, domainc, do
 %       L:          Lineal path function to given parameters, see Torquato p. 44
 
 %Check
-assert(strcmp(fineData.dist, 'binary'), 'Error: linealPath is only a possible basis function if conductivities are binary')
+% assert(strcmp(fineData.dist, 'binary'), 'Error: linealPath is only a possible basis function if conductivities are binary')
 
 phases = [fineData.lo; fineData.up];    %conductivities of the two phases
 
@@ -27,7 +27,7 @@ if dir == 'x'
     i = 1;
     for row = 1:yc
         for col = 1:maxX
-            if(lambdak(i) == phases(phase) && lambdak(i + pathLength) == phases(phase))
+            if(all(lambdak(i:(i + pathLength)) == phases(phase)))
                 samePhase = samePhase + 1;
             end
             i = i + 1;
@@ -45,7 +45,7 @@ elseif dir == 'y'
     i = 1;
     for row = 1:maxY
         for col = 1:xc
-            if(lambdak(i) == phases(phase) && lambdak(i + pathLength*xc) == phases(phase))
+            if(all(lambdak(i:xc:(i + pathLength*xc)) == phases(phase)))
                samePhase = samePhase + 1; 
             end
             i = i + 1;

@@ -8,11 +8,11 @@ patchTest = true;
 if(patchTest)
     %Test temperature field given by function handle T. FEM solver should lead to the same solution.
     %ONLY MODIFY COEFFICIENTS a, DO NOT MODIFY FUNCTIONAL FORM OF T!!! Otherwise the test will fail
-    a = [-1 2 3 -4];
+    a = [-4 3 2 6];
     T = @(x) a(1) + a(2)*x(1) + a(3)*x(2) + a(4)*x(1)*x(2);
     gradT = @(x) [a(2) + a(4)*x(2); a(3) + a(4)*x(1)];
     
-    nc = 10;
+    nc = 4;
     domainc = Domain(nc, nc, 1, 1);
     %specify boundary conditions here
     l = 1/nc;
@@ -31,19 +31,22 @@ if(patchTest)
         if i <= nc
             %bottom
             physicalc.qb(i) = qbtemp(2);
-        elseif(mod(i, nc + 1) == 0 && i < (nc + 1)^2)
+        elseif (i > nc && i <= 2*nc)
             %right
             physicalc.qb(i) = -qbtemp(1);
-        elseif(i > nc*(nc + 1))
+        elseif(i > 2*nc && i <= 3*nc)
             %top
             physicalc.qb(i) = -qbtemp(2);
-        elseif(mod(i, nc + 1) == 1 && i > 1)
+        elseif(i > 3*nc && i <= 4*nc)
             %left
             physicalc.qb(i) = qbtemp(1);
         end
     end
     physicalc.boundaryType = true(1, 4*nc);         %true for essential node, false for natural node
-    physicalc.boundaryType(2:nc) = false;           %lower boundary is natural
+%     physicalc.boundaryType((2*nc + 2):(3*nc)) = false;           %define natural boundaries
+%     physicalc.boundaryType([(0*nc + 2):(1*nc), (1*nc + 2):(2*nc)]) = false;
+%     physicalc.boundaryType((0*nc + 2):(2*nc)) = false;
+    physicalc.boundaryType(4) = false;
     physicalc.essentialNodes = domainc.boundaryNodes(physicalc.boundaryType);
     physicalc.naturalNodes = domainc.boundaryNodes(~physicalc.boundaryType);
     domainc = setNodalCoordinates(domainc, physicalc);
@@ -62,15 +65,33 @@ if(patchTest)
     
     testTemperatureField = Tcheck'
     FEMtemperatureField = out.Tff
-    figure
-    subplot(1, 2, 1)
-    pcolor(testTemperatureField);
-    title('true temperature field')
-    axis square
-    subplot(1, 2, 2);
-    pcolor(FEMtemperatureField);
-    title('FEM temperature field')
-    axis square
+    %for correct pcolor plot
+    testTemperatureFieldPlot = zeros(size(testTemperatureField) + 1);
+    testTemperatureFieldPlot(1:(end - 1), 1:(end - 1)) = testTemperatureField;
+    FEMtemperatureFieldPlot = testTemperatureFieldPlot;
+    FEMtemperatureFieldPlot(1:(end - 1), 1:(end - 1)) = FEMtemperatureField;
+    diff = abs(testTemperatureField - FEMtemperatureField);
+    diffPlot = testTemperatureFieldPlot;
+    diffPlot(1:(end - 1), 1:(end - 1)) = diff;
+    plt = false;
+    if plt
+        figure
+        subplot(1, 3, 1)
+        pcolor(testTemperatureFieldPlot);
+        colorbar
+        title('true temperature field')
+        axis square
+        subplot(1, 3, 2);
+        pcolor(FEMtemperatureFieldPlot);
+        colorbar
+        title('FEM temperature field')
+        axis square
+        subplot(1, 3, 3);
+        pcolor(diffPlot)
+        colorbar
+        title('difference')
+        axis square
+    end
     if(sqrt(sum(sum((testTemperatureField - FEMtemperatureField).^2)))/numel(testTemperatureField) > 1e-10)
         warning('Patch test for FEM failed')
         difference = sqrt(sum(sum((testTemperatureField - FEMtemperatureField).^2)))/numel(testTemperatureField)
@@ -89,7 +110,7 @@ if(convergenceTest)
         % Create with N_Threads workers
         parpool('local',N_Threads);
     end
-    a = [-1 2 3 -4];
+    a = [-1 5 3 -4];
     c = 1; %c > 0
     d = 2;
     T = @(x) d*log(norm(x + c)) + a(1) + a(2)*x(1)^2 + a(3)*x(2) + a(4)*x(1)*x(2);
@@ -97,8 +118,8 @@ if(convergenceTest)
         + [2*a(2)*x(1) + a(4)*x(2); a(3) + a(4)*x(1)];
     
     control.plt = false;
-    nSimulations = 30;
-    incrementFactor = 3;
+    nSimulations = 22;
+    incrementFactor = 4;
     tic;
     for k = 1:nSimulations
         nc = incrementFactor*k;
@@ -132,7 +153,7 @@ if(convergenceTest)
             end
         end
         physical{k}.boundaryType = true(1, 4*nc);         %true for essential node, false for natural node
-        %     physical{k}.boundaryType(2:nc) = false;           %lower boundary is natural
+%         physical{k}.boundaryType([(2:nc), (nc + 2):(2*nc)]) = false;           %lower boundary is natural
         physical{k}.essentialNodes = domain{k}.boundaryNodes(physical{k}.boundaryType);
         physical{k}.naturalNodes = domain{k}.boundaryNodes(~physical{k}.boundaryType);
         domain{k} = setNodalCoordinates(domain{k}, physical{k});

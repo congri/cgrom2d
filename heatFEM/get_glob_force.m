@@ -4,10 +4,10 @@ function [F] = get_glob_force(domain, physical, k)
 neq = max(domain.nodalCoordinates(3,:));
 F = zeros(neq,1);
 
-for i = 1:domain.nEl
-    f = get_loc_force(i, domain, k, physical);
+for e = 1:domain.nEl
+    f = get_loc_force(e, domain, k, physical);
     for ln = 1:4
-        eqn = domain.lm(i, ln);
+        eqn = domain.lm(e, ln);
         if(eqn ~= 0)
             F(eqn) = F(eqn) + f(ln);
         end

@@ -34,6 +34,7 @@ for e = 1:domain.nEl
             break;
         end
     end
+
     
     if nat      %The element has natural boundaries
 %         if(e == 1) %lower left corner
@@ -112,7 +113,7 @@ for e = 1:domain.nEl
         for l = 1:4     %loop through local node numbers of element e
             globalNode = domain.globalNodeNumber(e, l);
             if(any(globalNode == physical.naturalNodes))
-                %node is a natural boundary
+                %node is natural
                 if globalNode < domain.nElX + 1
                     %lower boundary
                     h = physical.qb(globalNode == domain.boundaryNodes);
@@ -127,9 +128,9 @@ for e = 1:domain.nEl
                     %right boundary
                     h = physical.qb(globalNode == domain.boundaryNodes);
                     if l == 2
-                        fh(2,e) = fh(2,e) - h*(1/2)*(yI + yII - 2*y4);
+                        fh(2, e) = fh(2,e) - h*(1/2)*(yI + yII - 2*y4);
                     elseif l == 3
-                        fh(3,e) = fh(3,e) + h*(1/2)*(yI + yII - 2*y1);
+                        fh(3, e) = fh(3,e) + h*(1/2)*(yI + yII - 2*y1);
                     else
                         error('Impossible combination of boundary and local node number')
                     end

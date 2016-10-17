@@ -72,6 +72,7 @@ classdef Domain
                 ((domainObj.nElX + 1)*(domainObj.nElY + 1) - 1):(-1):((domainObj.nElX + 1)*domainObj.nElY + 1),...
                 (domainObj.nElX + 1)*((domainObj.nElY - 1):(-1):1) + 1];
             
+            %local coordinate array. FIrst index is element number, 2 is local node, 3 is x or y
             domainObj.lc = get_loc_coord(domainObj);
             domainObj.globalNodeNumber = get_glob(domainObj);
             domainObj.totalNodeNumber = domainObj.globalNodeNumber(end, end - 1);
