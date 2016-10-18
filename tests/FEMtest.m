@@ -9,10 +9,14 @@ if(patchTest)
     %Test temperature field given by function handle T. FEM solver should lead to the same solution.
     %ONLY MODIFY COEFFICIENTS a, DO NOT MODIFY FUNCTIONAL FORM OF T!!! Otherwise the test will fail
     a = [-4 3 2 6];
-    T = @(x) a(1) + a(2)*x(1) + a(3)*x(2) + a(4)*x(1)*x(2);
-    gradT = @(x) [a(2) + a(4)*x(2); a(3) + a(4)*x(1)];
+    physicalc.Tbfun = @(x) a(1) + a(2)*x(1) + a(3)*x(2) + a(4)*x(1)*x(2);
+    physicalc.gradT = @(x) [a(2) + a(4)*x(2); a(3) + a(4)*x(1)];
+    physicalc.qbfun{1} = @(x) -(a(3) + a(4)*x);     %only for unit conductivity
+    physicalc.qbfun{2} = @(y) (a(2) + a(4)*y);
+    physicalc.qbfun{3} = @(x) (a(3) + a(4)*x);
+    physicalc.qbfun{4} = @(y) -(a(2) + a(4)*y);
     
-    nc = 4;
+    nc = 2;
     domainc = Domain(nc, nc, 1, 1);
     %specify boundary conditions here
     l = 1/nc;
@@ -25,8 +29,8 @@ if(patchTest)
         Dc(:,:,j) = eye(2); %only isotropic material
     end
     for i = 1:4*nc
-        physicalc.Tb(i) = T(boundaryCoordinates(:, i));
-        qbtemp = - .25*Dc(:, :, 1)*gradT(boundaryCoordinates(:, i));
+        physicalc.Tb(i) = physicalc.Tbfun(boundaryCoordinates(:, i));
+        qbtemp = - .25*Dc(:, :, 1)*physicalc.gradT(boundaryCoordinates(:, i));
         %projection along normal vectors of domain boundaries
         if i <= nc
             %bottom
@@ -46,9 +50,19 @@ if(patchTest)
 %     physicalc.boundaryType((2*nc + 2):(3*nc)) = false;           %define natural boundaries
 %     physicalc.boundaryType([(0*nc + 2):(1*nc), (1*nc + 2):(2*nc)]) = false;
 %     physicalc.boundaryType((0*nc + 2):(2*nc)) = false;
-    physicalc.boundaryType(4) = false;
+    physicalc.boundaryType([2:8]) = false;
     physicalc.essentialNodes = domainc.boundaryNodes(physicalc.boundaryType);
     physicalc.naturalNodes = domainc.boundaryNodes(~physicalc.boundaryType);
+    physicalc.naturalBoundaries = false(domainc.nEl, 4);
+    physicalc.naturalBoundaries(1, 1) = true;
+    physicalc.naturalBoundaries(1, 4) = true;
+    physicalc.naturalBoundaries(2, 1) = true;
+    physicalc.naturalBoundaries(3, 4) = true;
+    physicalc.naturalBoundaries(3, 3) = true;
+    physicalc.naturalBoundaries(2, 2) = true;
+    physicalc.naturalBoundaries(4, 2) = true;
+    physicalc.naturalBoundaries(4, 3) = true;
+    
     domainc = setNodalCoordinates(domainc, physicalc);
     domainc = setBvec(domainc);
     control.plt = false;
@@ -60,7 +74,7 @@ if(patchTest)
     out = heat2d(domainc, physicalc, control, Dc);
     
     for i = 1:domainc.nNodes
-        Tcheck(mod(i - 1, nc + 1) + 1, floor((i - 1)/(nc + 1)) + 1) = T(domainc.nodalCoordinates(1:2, i));
+        Tcheck(mod(i - 1, nc + 1) + 1, floor((i - 1)/(nc + 1)) + 1) = physicalc.Tbfun(domainc.nodalCoordinates(1:2, i));
     end
     
     testTemperatureField = Tcheck'
@@ -113,8 +127,8 @@ if(convergenceTest)
     a = [-1 5 3 -4];
     c = 1; %c > 0
     d = 2;
-    T = @(x) d*log(norm(x + c)) + a(1) + a(2)*x(1)^2 + a(3)*x(2) + a(4)*x(1)*x(2);
-    gradT = @(x) [d*(x(1) + c)/norm(x + c)^2; d*(x(2) + c)/norm(x + c)^2]...
+    physicalc.Tbfun = @(x) d*log(norm(x + c)) + a(1) + a(2)*x(1)^2 + a(3)*x(2) + a(4)*x(1)*x(2);
+    physicalc.gradT = @(x) [d*(x(1) + c)/norm(x + c)^2; d*(x(2) + c)/norm(x + c)^2]...
         + [2*a(2)*x(1) + a(4)*x(2); a(3) + a(4)*x(1)];
     
     control.plt = false;
@@ -135,8 +149,8 @@ if(convergenceTest)
             Dc(:,:,j) = eye(2); %only isotropic material
         end
         for i = 1:4*nc
-            physical{k}.Tb(i) = T(boundaryCoordinates(:, i));
-            qbtemp = - .25*Dc(:, :, 1)*gradT(boundaryCoordinates(:, i));
+            physical{k}.Tb(i) = physicalc.Tbfun(boundaryCoordinates(:, i));
+            qbtemp = - .25*Dc(:, :, 1)*physicalc.gradT(boundaryCoordinates(:, i));
             %projection along normal vectors of domain boundaries
             if i <= nc
                 %bottom
@@ -164,7 +178,7 @@ if(convergenceTest)
         physical{k}.fs = get_heat_source(physical{k}.heatSourceField, domain{k});
         physical{k}.fh = get_flux_force(domain{k}, physical{k});
         for i = 1:domain{k}.nNodes
-            Tcheck{k}(mod(i - 1, nc + 1) + 1, floor((i - 1)/(nc + 1)) + 1) = T(domain{k}.nodalCoordinates(1:2, i));
+            Tcheck{k}(mod(i - 1, nc + 1) + 1, floor((i - 1)/(nc + 1)) + 1) = physicalc.Tbfun(domain{k}.nodalCoordinates(1:2, i));
         end
         testTemperatureField{k} = Tcheck{k}';
     end

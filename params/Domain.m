@@ -8,6 +8,7 @@ classdef Domain
         nEl                         %total number of elements
         nNodes                      %total number of nodes
         boundaryNodes               %Nodes on the domain boundary
+        boundaryElements            %Elements on boundary, counterclockwise counted
         lx = 1;                     %domain size
         ly = 1;
         lElX                        %element size
@@ -71,6 +72,10 @@ classdef Domain
                 2*(domainObj.nElX + 1):(domainObj.nElX + 1):(domainObj.nElX + 1)*(domainObj.nElY + 1),...
                 ((domainObj.nElX + 1)*(domainObj.nElY + 1) - 1):(-1):((domainObj.nElX + 1)*domainObj.nElY + 1),...
                 (domainObj.nElX + 1)*((domainObj.nElY - 1):(-1):1) + 1];
+            domainObj.boundaryElements = [1:domainObj.nElX,...
+                2*(domainObj.nElX):(domainObj.nElX):(domainObj.nElX*domainObj.nElY),...
+                ((domainObj.nElX)*(domainObj.nElY) - 1):(-1):(domainObj.nElX*(domainObj.nElY - 1) + 1),...
+                (domainObj.nElX)*((domainObj.nElY - 2):(-1):1) + 1];
             
             %local coordinate array. FIrst index is element number, 2 is local node, 3 is x or y
             domainObj.lc = get_loc_coord(domainObj);
@@ -124,7 +129,6 @@ classdef Domain
                 B3 = (1/4)*[yI-y4 y4-yI yI-y1 y1-yI; xII-x2 x1-xII xII-x1 x2-xII];
                 B4 = (1/4)*[yII-y4 y4-yII yII-y1 y1-yII; xI-x2 x1-xI xI-x1 x2-xI];
                 
-                %Is the factor AEl correct?
                 domainObj.Bvec(:,:,e) = (1/domainObj.AEl)*[B1; B2; B3; B4];
             end
         end

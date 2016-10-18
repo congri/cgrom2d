@@ -21,6 +21,8 @@ function [f] = get_loc_force(e, domain, kin, physical)
     else
         f = physical.fh(:,e) + physical.fs(:,e);
     end
-
+    
+    %Tb is checked and correct
+    
 end
 

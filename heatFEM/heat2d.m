@@ -10,7 +10,8 @@ function [k] = get_loc_stiff2(Bvec, D, AEl)
     Dmat = [D Z Z Z; Z D Z Z; Z Z D Z; Z Z Z D];
 
     %is the factor AEl correct?
-    k = AEl*Bvec'*Dmat*Bvec;
+%     k = AEl*Bvec'*Dmat*Bvec;
+    k = Bvec'*Dmat*Bvec;
 end
 
 
