@@ -8,6 +8,8 @@ classdef Domain
         nEl                         %total number of elements
         nNodes                      %total number of nodes
         boundaryNodes               %Nodes on the domain boundary
+        essentialNodes              %essential boundary nodes
+        naturalNodes                %natural boundary nodes
         boundaryElements            %Elements on boundary, counterclockwise counted
         boundaryType                %true for essential, false for natural boundary node
         lx = 1;                     %domain size
@@ -140,8 +142,33 @@ classdef Domain
             %left corner
             domainObj.boundaryType = true(1, 2*domainObj.nElX + 2*domainObj.nElY);
             domainObj.boundaryType(natNodes) = false;
+            domainObj.essentialNodes = domainObj.boundaryNodes(domainObj.boundaryType);
+            domainObj.naturalNodes = domainObj.boundaryNodes(~domainObj.boundaryType);
         end
     end
     
 end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
