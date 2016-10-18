@@ -3,14 +3,12 @@ function [Out] = heat2d(domain, physical, control, D)
 %Gives back temperature on point x
 
 %get_loc_stiff as nested function for performance 
-function [k] = get_loc_stiff2(Bvec, D, AEl)
+function [k] = get_loc_stiff2(Bvec, D)
     %Gives the local stiffness matrix
 
     Z = zeros(2, 2);
     Dmat = [D Z Z Z; Z D Z Z; Z Z D Z; Z Z Z D];
 
-    %is the factor AEl correct?
-%     k = AEl*Bvec'*Dmat*Bvec;
     k = Bvec'*Dmat*Bvec;
 end
 
@@ -18,7 +16,7 @@ end
 %Compute local stiffness matrices, once and for all
 Out.localStiffness = zeros(4, 4, domain.nEl);
 for e = 1:domain.nEl
-    Out.localStiffness(:, :, e) = get_loc_stiff2(domain.Bvec(:, :, e), D(:, :, e), domain.AEl);
+    Out.localStiffness(:, :, e) = get_loc_stiff2(domain.Bvec(:, :, e), D(:, :, e));
 end
 
 %Global stiffness matrix

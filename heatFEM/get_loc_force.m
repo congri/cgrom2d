@@ -1,5 +1,6 @@
 function [f] = get_loc_force(e, domain, kin, physical)
 %Gives local force vector
+%for f_e see e.g. Hughes eq. 2.5.8
 
     %Contribution due to essential boundaries
     %local stiffness matrix k
@@ -21,8 +22,6 @@ function [f] = get_loc_force(e, domain, kin, physical)
     else
         f = physical.fh(:,e) + physical.fs(:,e);
     end
-    
-    %Tb is checked and correct
     
 end
 

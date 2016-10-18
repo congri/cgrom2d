@@ -16,7 +16,7 @@ if(patchTest)
     physicalc.qbfun{3} = @(x) (a(3) + a(4)*x);
     physicalc.qbfun{4} = @(y) -(a(2) + a(4)*y);
     
-    nc = 2;
+    nc = 3;
     domainc = Domain(nc, nc, 1, 1);
     %specify boundary conditions here
     l = 1/nc;
@@ -47,21 +47,18 @@ if(patchTest)
         end
     end
     physicalc.boundaryType = true(1, 4*nc);         %true for essential node, false for natural node
-%     physicalc.boundaryType((2*nc + 2):(3*nc)) = false;           %define natural boundaries
-%     physicalc.boundaryType([(0*nc + 2):(1*nc), (1*nc + 2):(2*nc)]) = false;
-%     physicalc.boundaryType((0*nc + 2):(2*nc)) = false;
-    physicalc.boundaryType([2:8]) = false;
+    physicalc.boundaryType([1 2]) = false;
     physicalc.essentialNodes = domainc.boundaryNodes(physicalc.boundaryType);
     physicalc.naturalNodes = domainc.boundaryNodes(~physicalc.boundaryType);
     physicalc.naturalBoundaries = false(domainc.nEl, 4);
     physicalc.naturalBoundaries(1, 1) = true;
     physicalc.naturalBoundaries(1, 4) = true;
     physicalc.naturalBoundaries(2, 1) = true;
-    physicalc.naturalBoundaries(3, 4) = true;
-    physicalc.naturalBoundaries(3, 3) = true;
-    physicalc.naturalBoundaries(2, 2) = true;
-    physicalc.naturalBoundaries(4, 2) = true;
-    physicalc.naturalBoundaries(4, 3) = true;
+    
+
+    
+    
+    
     
     domainc = setNodalCoordinates(domainc, physicalc);
     domainc = setBvec(domainc);

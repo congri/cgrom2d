@@ -77,7 +77,7 @@ classdef Domain
                 ((domainObj.nElX)*(domainObj.nElY) - 1):(-1):(domainObj.nElX*(domainObj.nElY - 1) + 1),...
                 (domainObj.nElX)*((domainObj.nElY - 2):(-1):1) + 1];
             
-            %local coordinate array. FIrst index is element number, 2 is local node, 3 is x or y
+            %local coordinate array. First index is element number, 2 is local node, 3 is x or y
             domainObj.lc = get_loc_coord(domainObj);
             domainObj.globalNodeNumber = get_glob(domainObj);
             domainObj.totalNodeNumber = domainObj.globalNodeNumber(end, end - 1);
@@ -123,13 +123,15 @@ classdef Domain
                 yII = 0.5*(y1 + y4) + 0.5*eta2*(y4 - y1);
                 
                 %Assuming bilinear shape functions here!!!
-                B1 = (1/4)*[yI-y4 y4-yI yI-y1 y1-yI; xI-x2 x1-xI xI-x1 x2-xI];
-                B2 = (1/4)*[yII-y4 y4-yII yII-y1 y1-yII; xII-x2 x1-xII xII-x1 x2-xII];
+                B1 = [yI-y4 y4-yI yI-y1 y1-yI; xI-x2 x1-xI xI-x1 x2-xI];
+                B2 = [yII-y4 y4-yII yII-y1 y1-yII; xII-x2 x1-xII xII-x1 x2-xII];
                 %Do not forget cross terms
-                B3 = (1/4)*[yI-y4 y4-yI yI-y1 y1-yI; xII-x2 x1-xII xII-x1 x2-xII];
-                B4 = (1/4)*[yII-y4 y4-yII yII-y1 y1-yII; xI-x2 x1-xI xI-x1 x2-xI];
+                B3 = [yI-y4 y4-yI yI-y1 y1-yI; xII-x2 x1-xII xII-x1 x2-xII];
+                B4 = [yII-y4 y4-yII yII-y1 y1-yII; xI-x2 x1-xI xI-x1 x2-xI];
                 
-                domainObj.Bvec(:,:,e) = (1/domainObj.AEl)*[B1; B2; B3; B4];
+                %Note:in Gauss quadrature, the differential transforms as dx = (l_x/2) d xi. Hence
+                %we take the additional factor of sqrt(A)/2 onto B
+                domainObj.Bvec(:,:,e) = (1/(2*sqrt(domainObj.AEl)))*[B1; B2; B3; B4];
             end
         end
     end

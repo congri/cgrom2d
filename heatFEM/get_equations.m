@@ -5,9 +5,9 @@ localNodeInit = 1:4;
 Equations = [];
 LocalNode = [];
 for e = 1:nElements
-    equations = lm(e,localNodeInit);
-    equations = equations(equations > 0);
-    localNode = localNodeInit(equations > 0);
+    equationslm = lm(e,localNodeInit);
+    equations = equationslm(equationslm > 0);
+    localNode = localNodeInit(equationslm > 0);
 
     [Equations1, Equations2] = meshgrid(equations);
     Equations = [Equations; Equations1(:) Equations2(:)];
