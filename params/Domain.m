@@ -9,6 +9,7 @@ classdef Domain
         nNodes                      %total number of nodes
         boundaryNodes               %Nodes on the domain boundary
         boundaryElements            %Elements on boundary, counterclockwise counted
+        boundaryType                %true for essential, false for natural boundary node
         lx = 1;                     %domain size
         ly = 1;
         lElX                        %element size
@@ -103,8 +104,7 @@ classdef Domain
             %Gauss points
             xi1 = -1/sqrt(3);
             xi2 = 1/sqrt(3);
-            eta1 = -1/sqrt(3);
-            eta2 = 1/sqrt(3);
+            
             domainObj.Bvec = zeros(8, 4, domainObj.nEl);
             for e = 1:domainObj.nEl
                 for i = 1:4
@@ -119,8 +119,8 @@ classdef Domain
                 %Coordinate transformation
                 xI = 0.5*(x1 + x2) + 0.5*xi1*(x2 - x1);
                 xII = 0.5*(x1 + x2) + 0.5*xi2*(x2 - x1);
-                yI = 0.5*(y1 + y4) + 0.5*eta1*(y4 - y1);
-                yII = 0.5*(y1 + y4) + 0.5*eta2*(y4 - y1);
+                yI = 0.5*(y1 + y4) + 0.5*xi1*(y4 - y1);
+                yII = 0.5*(y1 + y4) + 0.5*xi2*(y4 - y1);
                 
                 %Assuming bilinear shape functions here!!!
                 B1 = [yI-y4 y4-yI yI-y1 y1-yI; xI-x2 x1-xI xI-x1 x2-xI];
@@ -133,6 +133,13 @@ classdef Domain
                 %we take the additional factor of sqrt(A)/2 onto B
                 domainObj.Bvec(:,:,e) = (1/(2*sqrt(domainObj.AEl)))*[B1; B2; B3; B4];
             end
+        end
+        
+        function domainObj = setBoundaries(domainObj, natNodes)    
+            %natNodes holds natural nodes counted counterclockwise around domain, starting in lower
+            %left corner
+            domainObj.boundaryType = true(1, 2*domainObj.nElX + 2*domainObj.nElY);
+            domainObj.boundaryType(natNodes) = false;
         end
     end
     

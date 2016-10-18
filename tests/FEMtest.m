@@ -55,6 +55,8 @@ if(patchTest)
     physicalc.naturalBoundaries(1, 4) = true;
     physicalc.naturalBoundaries(2, 1) = true;
     
+    domainc = setBoundaries(domainc, [1 2]);
+    
 
     
     
