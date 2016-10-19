@@ -1,25 +1,25 @@
-function [log_p, d_log_p, Tc] = log_p_cf(Tf_i, domainc, physicalc, conductivity, theta_cf)
+function [log_p, d_log_p, Tc] = log_p_cf(Tf_i, domainc, conductivity, theta_cf)
 %Coarse-to-fine map
 %ignore constant prefactor
 %log_p = -.5*logdet(S, 'chol') - .5*(Tf - mu)'*(S\(Tf - mu));
 %diagonal S
 
+%short hand notation
 W = theta_cf.W;
 S = theta_cf.S;
+Sinv = theta_cf.Sinv;
+
 D = zeros(2, 2, domainc.nEl);
-control.plt = false;
 %Conductivity matrix D, only consider isotropic materials here
 for j = 1:domainc.nEl
     D(:, :, j) =  conductivity(j)*eye(2);
 end
-FEMout = heat2d(domainc, physicalc, control, D);
+FEMout = heat2d(domainc, D);
 
 Tc = FEMout.Tff';
 Tc = Tc(:);
 WTc = W*Tc;
 %only for diagonal S!
-assert(isdiag(S), 'Error: matrix S not diagonal');
-Sinv = diag(1./diag(S));
 log_p = -.5*sum(log(diag(S))) - .5*(Tf_i - theta_cf.mu - WTc)'*(Sinv*(Tf_i - theta_cf.mu - WTc));
 
 if nargout > 1
@@ -45,7 +45,7 @@ if nargout > 1
             for j = 1:domainc.nEl
                 DFD(:, :, j) =  conductivityFD(j)*eye(2);
             end
-            FEMoutFD = heat2d(domainc, physicalc, control, DFD);
+            FEMoutFD = heat2d(domainc, DFD);
             TcFD = FEMoutFD.Tff';
             TcFD = TcFD(:);
             

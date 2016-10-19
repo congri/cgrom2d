@@ -1,13 +1,14 @@
-function [Tfinterp] = plotResult(theta_c, theta_cf, domainc, domainf, physicalc, phi)
+function [Tfinterp] = plotResult(theta_c, theta_cf, domainc, domainf, phi, fineData)
 %We sample the resulting distribution p(y|x, theta_c, theta_cf) here and compare to the true
 %solution
 
 tic;
 %load finescale data from last optimization
 load('./data/fineData/fineData')
-%Take first data point as reference
-cond = cond(:, 9);
-Tf = Tf(:, 9);
+%Generate test data point
+fineData.nSamples = 1;
+[cond, Tf] = genData(domainf, fineData);
+
 %design Matrix for p_c
 Phi = designMatrix(phi, cond, domainf, domainc);
 
@@ -17,7 +18,6 @@ Xsamples = mvnrnd(Phi*theta_c.theta, (theta_c.sigma^2)*eye(domainc.nEl), nSample
 LambdaSamples = exp(Xsamples);
 
 %% Run coarse model and sample from p_cf
-control.plt = false;
 Tc = zeros(domainc.nNodes, nSamples_p_c);
 Tfinterp = zeros(domainf.nNodes, nSamples_p_c);
 for i = 1:nSamples_p_c
@@ -25,7 +25,7 @@ for i = 1:nSamples_p_c
     for e = 1:domainc.nEl
         D(:, :, e) = LambdaSamples(e, i)*eye(2);
     end
-    FEMout = heat2d(domainc, physicalc, control, D);
+    FEMout = heat2d(domainc, D);
     Tctemp = FEMout.Tff';
     Tc(:, i) = Tctemp(:);
     
@@ -50,13 +50,16 @@ LambdacMean = mean(LambdaSamples, 2)
 LambdacMean = reshape(LambdacMean, domainc.nElX, domainc.nElY)';
 LambdacMeanPlot = zeros(size(LambdacMean) + 1);
 LambdacMeanPlot(1:(end - 1), 1:(end - 1)) = LambdacMean;
-LambdacMeanPlot(2, 2) = 95;
+% LambdacMeanPlot(2, 2) = 95;
 [LambdacX, LambdacY] = meshgrid(linspace(0, 1, domainc.nElX + 1), linspace(0, 1, domainc.nElY + 1));
 
 Lambdaf = reshape(cond, domainf.nElX, domainf.nElY)';
 [LambdafX, LambdafY] = meshgrid(linspace(0, 1, domainf.nElX + 1), linspace(0, 1, domainf.nElY + 1));
 LambdafPlot = zeros(size(Lambdaf) + 1);
 LambdafPlot(1:(end - 1), 1:(end - 1)) = Lambdaf;
+
+cmin = min([min(min(Tf_mean_mat)), min(min(Tf_true_mat))]);
+cmax = max([max(max(Tf_mean_mat)), max(max(Tf_true_mat))]);
 
 cmp = inferno();
 figure
@@ -68,6 +71,7 @@ title('Pred. mean')
 axis square
 colormap(cmp)
 colorbar
+caxis([cmin, cmax])
 
 subplot(3,2,1)
 contourf(Xcoord, Ycoord, Tf_true_mat, 256, 'linestyle', 'none')
@@ -77,6 +81,7 @@ title('True finescale output')
 axis square
 colormap(cmp)
 colorbar
+caxis([cmin, cmax])
 
 subplot(3,2,3)
 pcolor(LambdacX, LambdacY, LambdacMeanPlot)

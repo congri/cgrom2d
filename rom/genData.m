@@ -1,4 +1,4 @@
-function [cond, Tf] = genData(domain, physical, fineData)
+function [cond, Tf] = genData(domain, fineData)
 %Generating full order data
 
 %% Draw conductivity/ log conductivity
@@ -14,6 +14,22 @@ elseif strcmp(fineData.dist, 'binary')
     r = rand(domain.nEl, fineData.nSamples);
     cond = fineData.lo*ones(domain.nEl, fineData.nSamples);
     cond(r > fineData.p_lo) = fineData.up;
+elseif strcmp(fineData.dist, 'correlated_binary')
+    p = zeros(domain.nEl, fineData.nSamples);
+    cond = zeros(domain.nEl, fineData.nSamples);
+    for i = 1:fineData.nSamples
+        p(:, i) = genCorrelatedConductivity(domain, fineData.ly, fineData.lx, fineData.sigma_f2);
+        cond(:, i) = fineData.up*ones(domain.nEl, 1).*(p(:, i) > fineData.p_lo) +...
+            fineData.lo*ones(domain.nEl, 1).*(p(:, i) <= fineData.p_lo);
+        Lambdaf = reshape(cond(:,i), domain.nElX, domain.nElY)';
+        plt = false;
+        if plt
+            figure
+            pcolor(Lambdaf)
+            colorbar
+            pause
+        end
+    end
 elseif strcmp(fineData.dist, 'predefined_binary')
     cond(:, 1) = fineData.lo*ones(domain.nEl, 1);
     cond(:, 2) = fineData.up*ones(domain.nEl, 1);
@@ -68,12 +84,11 @@ end
 Tf = zeros(domain.nNodes, fineData.nSamples);
 D = zeros(2, 2, domain.nEl);
 for i = 1:fineData.nSamples
-    control.plt = false;
     %Conductivity matrix D, only consider isotropic materials here
     for j = 1:domain.nEl
         D(:, :, j) =  cond(j, i)*eye(2);
     end
-    FEMout = heat2d(domain, physical, control, D);
+    FEMout = heat2d(domain, D);
     %Store fine temperatures as a vector Tf. Use reshape(Tf(:, i), domain.nElX + 1, domain.nElY + 1)
     %and then transpose result to reconvert it to original temperature field
     Ttemp = FEMout.Tff';

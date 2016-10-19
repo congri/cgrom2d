@@ -10,6 +10,7 @@ addpath('./computation')
 addpath('./FEMgradient')
 addpath('./MCMCsampler')
 addpath('./optimization')
+addpath('./genConductivity')
 
 rng('shuffle')  %system time seed
 
@@ -18,7 +19,7 @@ params;
 
 %% Generate finescale dataset
 if fineData.genData
-    [cond, Tf] = genData(domainf, physicalf, fineData);
+    [cond, Tf] = genData(domainf, fineData);
     % Compute and store design matrix for each data point
     PhiArray = zeros(domainc.nEl, numel(phi), fineData.nSamples);
     for i = 1:fineData.nSamples
@@ -38,7 +39,7 @@ else
 end
 for i = 1:fineData.nSamples
     %take MCMC initializations at mode of p_c
-    MCMC(i).Xi_start = PhiArray(:,:,i)*theta_c.theta;
+    MCMC(i).Xi_start = PhiArray(:, :, i)*theta_c.theta;
 end
 
 %% Open parallel pool
@@ -56,9 +57,9 @@ collectData;
 for k = 2:(EM.maxIterations + 1)
     %% Test run for step sizes
     disp('test sampling...')
-    parfor i = 1:fineData.nSamples
+    for i = 1:fineData.nSamples
         log_qi{i} = @(Xi) log_q_i(Xi, Tf(:, i), theta_cf, theta_c,...
-            PhiArray(:, :, i), domainf, domainc, physicalc);
+            PhiArray(:, :, i), domainf, domainc);
         %find maximum of qi for thermalization
         %start value has some randomness to drive transitions between local optima
         X_start{i} = normrnd(MCMC(i).Xi_start, .01);
@@ -91,9 +92,9 @@ for k = 2:(EM.maxIterations + 1)
     
     disp('actual sampling...')
     %% Generate samples from every q_i
-    parfor i = 1:fineData.nSamples
+    for i = 1:fineData.nSamples
         log_qi{i} = @(Xi) log_q_i(Xi, Tf(:, i), theta_cf, theta_c,...
-            PhiArray(:, :, i), domainf, domainc, physicalc);
+            PhiArray(:, :, i), domainf, domainc);
         %sample from every q_i
         out(i) = MCMCsampler(log_qi{i}, Xmax{i}, MCMC(i));
         %avoid very low acceptances
@@ -143,12 +144,13 @@ for k = 2:(EM.maxIterations + 1)
         Tc_dyadic_mean = TcDyadicMean(Tc_samples, fineData.nSamples, MCMC);
         Wa_mean = mean(Wa, 3);
         theta_cf.W = compW(Tc_dyadic_mean,  Wa_mean,...
-            inv(theta_cf.S), theta_cf.W, paramIndices, constIndices);
+            theta_cf.Sinv, theta_cf.W, paramIndices, constIndices);
     end
     
     %decelerate convergence of S
     lowerBoundS = 1e-10;
     theta_cf.S = (1 - mix_S)*diag(mean(p_cf_exponent, 2)) + mix_S*theta_cf.S + lowerBoundS*eye(size(theta_cf.S, 1));
+    theta_cf.Sinv = inv(theta_cf.S);
     
     %% Compute theta_c and sigma if there is a prior on theta_c, sigma
     

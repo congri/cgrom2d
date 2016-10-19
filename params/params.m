@@ -1,35 +1,55 @@
 %main parameter file for 2d coarse-graining
 
+%% Temperature field and gradient generating the boundary conditions
+a = [-4 3 2 6];
+Tb = @(x) a(1) + a(2)*x(1) + a(3)*x(2) + a(4)*x(1)*x(2);
+qb{1} = @(x) -4*(a(3) + a(4)*x);      %lower bound
+qb{2} = @(y) 4*(a(2) + a(4)*y);       %right bound
+qb{3} = @(x) 4*(a(3) + a(4)*x);       %upper bound
+qb{4} = @(y) -4*(a(2) + a(4)*y);      %left bound
+
 %% Initialize domain
-nf = 16;
+nf = 32;
 nc = 2;
 assert(mod(nf, nc) == 0, 'error: nF not divisible by nC')
-domainf = Domain(nf, nf, 1, 1);
 domainc = Domain(nc, nc, 1, 1);
-
-%% Boundary conditions
-boundaryConditions;
+domainc = setBoundaries(domainc, [2:8], Tb, qb);           %ATTENTION: natural nodes have to be set manually
+                                                                %and consistently in domainc and domainf
+domainc = setNodalCoordinates(domainc);
+domainc = setBvec(domainc);
+domainc = setHeatSource(domainc, zeros(domainc.nEl, 1));
+domainf = Domain(nf, nf, 1, 1);
+domainf = setBoundaries(domainf, [2:32], Tb, qb);           %ATTENTION: natural nodes have to be set manually
+                                                                %and consistently in domainc and domainf
+domainf = setNodalCoordinates(domainf);
+domainf = setBvec(domainf);
+domainf = setHeatSource(domainf, zeros(domainf.nEl, 1));
 
 %% Finescale data params
 fineData.genData = true;    %generate new dataset?
-fineData.dist = 'predefined_binary';   %uniform, gaussian or binary (dist of log conductivity)
-fineData.nSamples = 16;
+fineData.dist = 'correlated_binary';   %uniform, gaussian or binary (dist of log conductivity)
+fineData.nSamples = 1;
 if strcmp(fineData.dist, 'gaussian')
     fineData.mu = 1.2;      %mean of log of lambda
     fineData.sigma = .3;    %sigma of log of lambda
-elseif (strcmp(fineData.dist, 'uniform') || strcmp(fineData.dist, 'binary') || strcmp(fineData.dist, 'predefined_binary'))
+elseif (strcmp(fineData.dist, 'uniform') || strcmp(fineData.dist, 'binary')...
+        || strcmp(fineData.dist, 'predefined_binary') || strcmp(fineData.dist, 'correlated_binary'))
     %for uniform & binary
-    fineData.lo = 2;    %upper and lower bounds on conductivity lambda
-    fineData.up = 100;
+    fineData.lo = 1;    %upper and lower bounds on conductivity lambda
+    fineData.up = 10;
     contrast = fineData.up/fineData.lo;
     %for binary
-    if strcmp(fineData.dist, 'binary')
-        fineData.p_lo = .4;
+    if (strcmp(fineData.dist, 'binary') || strcmp(fineData.dist, 'correlated_binary'))
+        fineData.p_lo = .7;
+        if strcmp(fineData.dist, 'correlated_binary')
+            fineData.lx = .001;
+            fineData.ly = .001;
+            fineData.sigma_f2 = 1; %has this parameter any impact?
+        end
     end
 else
     error('unknown fineCond distribution');
 end
-
 
 %% Some predefined basis functions for linear model p_c
 phi_1 = @(lambda) log(size(lambda, 1)/sum(1./lambda));
@@ -48,7 +68,7 @@ linpathphase1l1 = @(lambda) .5*linealPath(lambda, 1, 'x', 1, fineData, domainc, 
 linpathphase2l1 = @(lambda) .5*linealPath(lambda, 1, 'x', 2, fineData, domainc, domainf) +...
     .5*linealPath(lambda, 1, 'y', 2, fineData, domainc, domainf);
 
-phi = {phi_2; linpathphase1l2; linpathphase2l2};
+phi = {phi_3};
 nBasis = numel(phi);
 
 %% Object containing EM optimization params and stats
@@ -67,9 +87,10 @@ else
     theta_cf.W = (2/domainc.nEq)*rand(domainf.nNodes, domainc.nNodes);
 end
 theta_cf.S = 2*eye(domainf.nNodes);
+theta_cf.Sinv = inv(theta_cf.S);
 theta_cf.mu = zeros(domainf.nNodes, 1);
 % theta_c.theta = (1/size(phi, 1))*ones(size(phi, 1), 1);
-theta_c.theta = 1*ones(3, 1);
+theta_c.theta = .2*ones(nBasis, 1);
 theta_c.sigma = 2;
 
 %what kind of prior for theta_c
@@ -84,11 +105,11 @@ prior_hyperparam = [0; 1];                        %parameters a, b of gamma hype
 MCMC.method = 'MALA';                                %proposal type: randomWalk, nonlocal or MALA
 MCMC.seed = 8;
 MCMC.nThermalization = 0;                            %thermalization steps
-MCMC.nSamples = 100;                                 %number of samples
+MCMC.nSamples = 30;                                 %number of samples
 MCMC.nGap = 200;                                     %decorrelation gap
 MCMC.Xi_start = 20*ones(domainc.nEl, 1);
 %only for random walk
-MCMC.MALA.stepWidth = .05;
+MCMC.MALA.stepWidth = .005;
 stepWidth = 2e-0;
 MCMC.randomWalk.proposalCov = stepWidth*eye(domainc.nEl);   %random walk proposal covariance
 MCMC = repmat(MCMC, fineData.nSamples, 1);
