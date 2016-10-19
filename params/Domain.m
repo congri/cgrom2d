@@ -3,47 +3,40 @@ classdef Domain
 
     properties (SetAccess = private)
         
-        nElX = 10;                  %number of finite elements in each direction
+        nElX = 10;                  %number of finite elements in each direction; not tested for nElX ~= nElY
         nElY = 10;
         nEl                         %total number of elements
         nNodes                      %total number of nodes
         boundaryNodes               %Nodes on the domain boundary
         essentialNodes              %essential boundary nodes
+        essentialTemperatures       %Nodal temperature of essential nodes; NaN if natural
         naturalNodes                %natural boundary nodes
         boundaryElements            %Elements on boundary, counterclockwise counted
+        naturalBoundaries           %nEl x 4 array holding natural boundary edges of elements
         boundaryType                %true for essential, false for natural boundary node
-        lx = 1;                     %domain size
+        lx = 1;                     %domain size; not tested for lx, ly ~= 1
         ly = 1;
         lElX                        %element size
         lElY
         AEl
         nEq                         %number of equations
-        %lc gives node coordinates, taking in element number and local node
-        %number
-        lc
-        %Nodal coordiante array
-        %holds global nodal coordinates in the first two lines (x and y).
-        %In the thrid line, the equation number is stored
-        nodalCoordinates
-        %globalNodeNumber holds the global node number, given the element number as row
-        %and the local node number as column indices
-        globalNodeNumber
-        %total number of nodes
-        totalNodeNumber
-        %Shape function gradient array
-        Bvec
-        %essential boundary (yes or no) given local node and element number
-        essentialBoundary
-        %lm takes element number as row and local node number as column index
-        %and gives equation number
-        lm
-        %Get mapping from equation number back to global node number
-        id
-        %equation number and local node number precomputation for sparse stiffness
-        %assembly
-        Equations
+        lc                          %lc gives node coordinates, taking in element number and local node number
+        nodalCoordinates            %Nodal coordiante array
+                                    %holds global nodal coordinates in the first two lines (x and y).
+                                    %In the thrid line, the equation number is stored
+        globalNodeNumber            %globalNodeNumber holds the global node number, given the element number as row
+                                    %and the local node number as column indices
+        Bvec                        %Shape function gradient array, precomputed for performance
+        essentialBoundary           %essential boundary (yes or no) given local node and element number
+        lm                          %lm takes element number as row and local node number as column index
+                                    %and gives equation number
+        id                          %Get mapping from equation number back to global node number
+        Equations                   %eq. number and loc. node number precomputation for sparse stiffness assembly
         LocalNode
         kIndex
+        
+        fs                          %local forces due to heat source
+        fh                          %local forces due to natural boundary
   
     end
     
@@ -83,12 +76,11 @@ classdef Domain
             %local coordinate array. First index is element number, 2 is local node, 3 is x or y
             domainObj.lc = get_loc_coord(domainObj);
             domainObj.globalNodeNumber = get_glob(domainObj);
-            domainObj.totalNodeNumber = domainObj.globalNodeNumber(end, end - 1);
 
         end
         
-        function domainObj = setNodalCoordinates(domainObj, physical)
-            domainObj.nodalCoordinates = get_coord(domainObj, physical);
+        function domainObj = setNodalCoordinates(domainObj)
+            domainObj.nodalCoordinates = get_coord(domainObj);
             domainObj.lm = domainObj.globalNodeNumber;
             Sg = size(domainObj.globalNodeNumber);
             for i = 1:Sg(1)
@@ -98,7 +90,8 @@ classdef Domain
             end
             domainObj.id = get_id(domainObj.nodalCoordinates);
             [domainObj.Equations, domainObj.LocalNode] = get_equations(domainObj.nEl, domainObj.lm);
-            domainObj.kIndex = sub2ind([4 4 domainObj.nEl], domainObj.LocalNode(:,1), domainObj.LocalNode(:,2), domainObj.LocalNode(:,3));
+            domainObj.kIndex = sub2ind([4 4 domainObj.nEl], domainObj.LocalNode(:,1),...
+                domainObj.LocalNode(:,2), domainObj.LocalNode(:,3));
         end
         
         function domainObj = setBvec(domainObj)
@@ -110,7 +103,8 @@ classdef Domain
             domainObj.Bvec = zeros(8, 4, domainObj.nEl);
             for e = 1:domainObj.nEl
                 for i = 1:4
-                    domainObj.essentialBoundary(i,e) = ~isnan(domainObj.nodalCoordinates(4,domainObj.globalNodeNumber(e,i)));
+                    domainObj.essentialBoundary(i, e) =...
+                        ~isnan(domainObj.essentialTemperatures(domainObj.globalNodeNumber(e, i)));
                 end
                 %short hand notation
                 x1 = domainObj.lc(e,1,1);
@@ -137,13 +131,86 @@ classdef Domain
             end
         end
         
-        function domainObj = setBoundaries(domainObj, natNodes)    
+        function domainObj = setHeatSource(domainObj, heatSourceField)
+            domainObj.fs = get_heat_source(heatSourceField, domainObj);
+        end
+        
+        function domainObj = setBoundaries(domainObj, natNodes, Tb, qb)    
             %natNodes holds natural nodes counted counterclockwise around domain, starting in lower
-            %left corner
+            %left corner. Tb and qb are function handles to temperature and heat flux boundary
+            %functions
             domainObj.boundaryType = true(1, 2*domainObj.nElX + 2*domainObj.nElY);
             domainObj.boundaryType(natNodes) = false;
             domainObj.essentialNodes = domainObj.boundaryNodes(domainObj.boundaryType);
             domainObj.naturalNodes = domainObj.boundaryNodes(~domainObj.boundaryType);
+            
+            %Set essential temperatures
+            domainObj.essentialTemperatures = NaN*ones(1, domainObj.nNodes);
+            boundaryCoordinates = [0:domainObj.lElX:1, ones(1, domainObj.nElY),...
+                (1 - domainObj.lElX):(-domainObj.lElX):0, zeros(1, domainObj.nElY - 1);...
+                zeros(1, domainObj.nElX + 1), domainObj.lElY:domainObj.lElY:1,...
+                ones(1, domainObj.nElX), (1 - domainObj.lElY):(-domainObj.lElY):domainObj.lElY];
+            Tess = zeros(1, domainObj.nNodes);
+            for i = 1:(2*domainObj.nElX + 2*domainObj.nElY)
+                Tess(i) = Tb(boundaryCoordinates(:, i));
+            end
+            domainObj.essentialTemperatures(domainObj.essentialNodes) = Tess(domainObj.boundaryType);
+            
+            %Natural boundaries have to enclose natural nodes
+            domainObj.naturalBoundaries = false(domainObj.nEl, 4);
+            globNatNodes = domainObj.boundaryNodes(natNodes);   %global node numbers of natural nodes
+            
+            %Set natural boundaries
+            for i = 1:numel(globNatNodes)
+                %find elements containing these nodes
+                natElem = find(globNatNodes(i) == domainObj.globalNodeNumber);
+                [elem, ~] = ind2sub(size(domainObj.globalNodeNumber), natElem);
+                %find out side of boundary (lo, r, u, le)
+                if(globNatNodes(i) == 1)
+                    %lower left corner
+                    assert(numel(elem) == 1, 'Error: corner node in more than one element?')
+                    domainObj.naturalBoundaries(1, 1) = true;
+                    domainObj.naturalBoundaries(1, 4) = true;
+                elseif(globNatNodes(i) == domainObj.nElX + 1)
+                    %lower right corner
+                    assert(numel(elem) == 1, 'Error: corner node in more than one element?')
+                    domainObj.naturalBoundaries(elem, 1) = true;
+                    domainObj.naturalBoundaries(elem, 2) = true;
+                elseif(globNatNodes(i) == (domainObj.nElX + 1)*(domainObj.nElY + 1))
+                    %upper right corner
+                    assert(numel(elem) == 1, 'Error: corner node in more than one element?')
+                    domainObj.naturalBoundaries(elem, 2) = true;
+                    domainObj.naturalBoundaries(elem, 3) = true;
+                elseif(globNatNodes(i) == (domainObj.nElX + 1)*(domainObj.nElY) + 1)
+                    %upper left corner
+                    assert(numel(elem) == 1, 'Error: corner node in more than one element?')
+                    domainObj.naturalBoundaries(elem, 3) = true;
+                    domainObj.naturalBoundaries(elem, 4) = true;
+                elseif(globNatNodes(i) > 1 && globNatNodes(i) < domainObj.nElX + 1)
+                    %exclusively on lower bound
+                    assert(numel(elem) == 2, 'Error: boundary node not in 2 elements?')
+                    domainObj.naturalBoundaries(elem(1), 1) = true;
+                    domainObj.naturalBoundaries(elem(2), 1) = true;
+                elseif(mod(globNatNodes(i), domainObj.nElX + 1) == 0)
+                    %exclusively on right bound
+                    assert(numel(elem) == 2, 'Error: boundary node not in 2 elements?')
+                    domainObj.naturalBoundaries(elem(1), 2) = true;
+                    domainObj.naturalBoundaries(elem(2), 2) = true;
+                elseif(globNatNodes(i) > (domainObj.nElX + 1)*(domainObj.nElY) + 1)
+                    %exclusively on upper bound
+                    assert(numel(elem) == 2, 'Error: boundary node not in 2 elements?')
+                    domainObj.naturalBoundaries(elem(1), 3) = true;
+                    domainObj.naturalBoundaries(elem(2), 3) = true;
+                elseif(mod(globNatNodes(i), domainObj.nElX + 1) == 1)
+                    %exclusively on left bound
+                    assert(numel(elem) == 2, 'Error: boundary node not in 2 elements?')
+                    domainObj.naturalBoundaries(elem(1), 4) = true;
+                    domainObj.naturalBoundaries(elem(2), 4) = true;
+                end
+            end
+            
+            %Finally set local forces due to natural boundaries
+            domainObj.fh = get_flux_force(domainObj, qb);
         end
     end
     

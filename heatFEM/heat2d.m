@@ -1,4 +1,4 @@
-function [Out] = heat2d(domain, physical, control, D)
+function [Out] = heat2d(domain, D)
 %2D heat conduction main function
 %Gives back temperature on point x
 
@@ -22,45 +22,25 @@ end
 %Global stiffness matrix
 Out.globalStiffness = get_glob_stiff2(domain, Out.localStiffness);
 %Global force vector
-Out.globalForce = get_glob_force(domain, physical, Out.localStiffness);
+Out.globalForce = get_glob_force(domain, Out.localStiffness);
 
 %Finally solving the equation system
 Out.naturalTemperatures = Out.globalStiffness\Out.globalForce;
 
 %Temperature field
-Tf = zeros(domain.totalNodeNumber,1);
-
+Tf = zeros(domain.nNodes, 1);
 Tf(domain.id) = Out.naturalTemperatures;
-% if(strcmp(domain.boundaries(1), 'essential'))
-%     Tf(1:(domain.nElX + 1)) = physical.Tb(1);
-% end
-% if(strcmp(domain.boundaries(2),'essential'))
-%    Tf((domain.nElX + 1):(domain.nElX + 1):(domain.nElX + 1)*(domain.nElY + 1)) = physical.Tb(2);
-% end
-% if(strcmp(domain.boundaries(3),'essential'))
-%     Tf((domain.nElY*(domain.nElX + 1) + 1):(domain.nElY + 1)*(domain.nElX + 1)) = physical.Tb(3);
-% end
-% if(strcmp(domain.boundaries(4),'essential'))
-%    Tf(1:(domain.nElX + 1):(domain.nElX + 1)*(domain.nElY + 1)) = physical.Tb(4); 
-% end
-
 Tff = zeros(domain.nElX + 1, domain.nElY + 1);
 
-for i = 1:domain.totalNodeNumber
-   Tff(i) = Tf(i);
-   if(~isnan(domain.nodalCoordinates(4, i)))
-       Tff(i) = domain.nodalCoordinates(4, i);
-   end
+for i = 1:domain.nNodes
+    Tff(i) = Tf(i);
+    if(any(i == domain.essentialNodes))
+        %node i is essential
+        Tff(i) = domain.essentialTemperatures(i);
+    end
 end
 Tff = Tff';
 Out.Tff = Tff;
 
-%Find temperature Tx on input point x
-[X, Y] = meshgrid(linspace(0, domain.lx, domain.nElX + 1), linspace(0, domain.ly, domain.nElY + 1));
 
-%Plot?
-if(control.plt)
-    plotHeatMap(X, Y, Tff, domain, physical);
-    %[Qx, Qy] = plotflux(X, Y, Tff, domain, D);
-end
 end

@@ -1,4 +1,4 @@
-function [f] = get_loc_force(e, domain, kin, physical)
+function [f] = get_loc_force(e, domain, kin)
 %Gives local force vector
 %for f_e see e.g. Hughes eq. 2.5.8
 
@@ -10,17 +10,18 @@ function [f] = get_loc_force(e, domain, kin, physical)
     Tb = zeros(4,1);
     Tbflag = 0;
     for i = 1:4
-        if(~isnan(domain.nodalCoordinates(4, domain.globalNodeNumber(e, i))))
-            Tb(i) = domain.nodalCoordinates(4, domain.globalNodeNumber(e, i));
+        globNode = domain.globalNodeNumber(e, i);
+        if(any(globNode == domain.essentialNodes))
+            Tb(i) = domain.essentialTemperatures(globNode);
             Tbflag = 1;
         end
     end
 
     if(Tbflag)
         fT = k*Tb;
-        f = physical.fh(:,e) + physical.fs(:,e) - fT;
+        f = domain.fh(:,e) + domain.fs(:,e) - fT;
     else
-        f = physical.fh(:,e) + physical.fs(:,e);
+        f = domain.fh(:,e) + domain.fs(:,e);
     end
     
 end

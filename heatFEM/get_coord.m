@@ -11,13 +11,12 @@ function [nc] = get_coord(domain, physical)
 x = 0;
 y = 0;
 j = 1;  %equation number index
-k = 1;  %boundary node index
-nc = NaN*zeros(4, domain.totalNodeNumber);
-for i = 1:domain.totalNodeNumber
+nc = NaN*zeros(3, domain.nNodes);
+for i = 1:domain.nNodes
     nc(1, i) = x;
     nc(2, i) = y;
 
-    if(any(physical.essentialNodes == i))
+    if(any(domain.essentialNodes == i))
         %essential node, no equation number assigned
         nc(3, i) = 0;
     else
@@ -33,7 +32,6 @@ for i = 1:domain.totalNodeNumber
         y = y + domain.lElY;
     end
 end
-nc(4, domain.essentialNodes) = physical.Tb(domain.boundaryType);
 
 end
 

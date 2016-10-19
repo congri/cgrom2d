@@ -9,71 +9,31 @@ if(patchTest)
     %Test temperature field given by function handle T. FEM solver should lead to the same solution.
     %ONLY MODIFY COEFFICIENTS a, DO NOT MODIFY FUNCTIONAL FORM OF T!!! Otherwise the test will fail
     a = [-4 3 2 6];
-    physicalc.Tbfun = @(x) a(1) + a(2)*x(1) + a(3)*x(2) + a(4)*x(1)*x(2);
-    physicalc.gradT = @(x) [a(2) + a(4)*x(2); a(3) + a(4)*x(1)];
-    physicalc.qbfun{1} = @(x) -(a(3) + a(4)*x);     %only for unit conductivity
-    physicalc.qbfun{2} = @(y) (a(2) + a(4)*y);
-    physicalc.qbfun{3} = @(x) (a(3) + a(4)*x);
-    physicalc.qbfun{4} = @(y) -(a(2) + a(4)*y);
+    Tbfun = @(x) a(1) + a(2)*x(1) + a(3)*x(2) + a(4)*x(1)*x(2);
+    qb{1} = @(x) -(a(3) + a(4)*x);     %only for unit conductivity
+    qb{2} = @(y) (a(2) + a(4)*y);
+    qb{3} = @(x) (a(3) + a(4)*x);
+    qb{4} = @(y) -(a(2) + a(4)*y);
     
+    %domain object. Best not change the order of commands!
     nc = 3;
     domainc = Domain(nc, nc, 1, 1);
-    %specify boundary conditions here
-    l = 1/nc;
-    boundaryCoordinates = [0:l:1, ones(1, nc), (1 - l):(-l):0, zeros(1, nc - 1);...
-        zeros(1, nc + 1), l:l:1, ones(1, nc), (1 - l):(-l):l];
+    domainc = setBoundaries(domainc, [1 2 3], Tbfun, qb);
+    domainc = setNodalCoordinates(domainc);
+    domainc = setBvec(domainc);
+    domainc = setHeatSource(domainc, zeros(domainc.nEl, 1));
+    
     %heat conductivity tensor for each element
     Dc = zeros(2, 2, domainc.nEl);
     for j = 1:domainc.nEl
         %Test is only valid for constant D in the whole domain!
         Dc(:,:,j) = eye(2); %only isotropic material
     end
-    for i = 1:4*nc
-        physicalc.Tb(i) = physicalc.Tbfun(boundaryCoordinates(:, i));
-        qbtemp = - .25*Dc(:, :, 1)*physicalc.gradT(boundaryCoordinates(:, i));
-        %projection along normal vectors of domain boundaries
-        if i <= nc
-            %bottom
-            physicalc.qb(i) = qbtemp(2);
-        elseif (i > nc && i <= 2*nc)
-            %right
-            physicalc.qb(i) = -qbtemp(1);
-        elseif(i > 2*nc && i <= 3*nc)
-            %top
-            physicalc.qb(i) = -qbtemp(2);
-        elseif(i > 3*nc && i <= 4*nc)
-            %left
-            physicalc.qb(i) = qbtemp(1);
-        end
-    end
-    physicalc.boundaryType = true(1, 4*nc);         %true for essential node, false for natural node
-    physicalc.boundaryType([1 2]) = false;
-    physicalc.essentialNodes = domainc.boundaryNodes(physicalc.boundaryType);
-    physicalc.naturalNodes = domainc.boundaryNodes(~physicalc.boundaryType);
-    physicalc.naturalBoundaries = false(domainc.nEl, 4);
-    physicalc.naturalBoundaries(1, 1) = true;
-    physicalc.naturalBoundaries(1, 4) = true;
-    physicalc.naturalBoundaries(2, 1) = true;
-    
-    domainc = setBoundaries(domainc, [1 2]);
-    
 
-    
-    
-    
-    
-    domainc = setNodalCoordinates(domainc, physicalc);
-    domainc = setBvec(domainc);
-    control.plt = false;
-    %Assign heat source field
-    physicalc.heatSourceField = zeros(domainc.nEl, 1);
-    %Force contributions due to heat flux and source
-    physicalc.fs = get_heat_source(physicalc.heatSourceField, domainc);
-    physicalc.fh = get_flux_force(domainc, physicalc);
-    out = heat2d(domainc, physicalc, control, Dc);
+    out = heat2d(domainc, Dc);
     
     for i = 1:domainc.nNodes
-        Tcheck(mod(i - 1, nc + 1) + 1, floor((i - 1)/(nc + 1)) + 1) = physicalc.Tbfun(domainc.nodalCoordinates(1:2, i));
+        Tcheck(mod(i - 1, nc + 1) + 1, floor((i - 1)/(nc + 1)) + 1) = Tbfun(domainc.nodalCoordinates(1:2, i));
     end
     
     testTemperatureField = Tcheck'
@@ -115,6 +75,8 @@ if(patchTest)
 end
 
 
+
+
 convergenceTest = false;
 if(convergenceTest)
     % If no parallel pool exists, create one
@@ -130,7 +92,6 @@ if(convergenceTest)
     physicalc.gradT = @(x) [d*(x(1) + c)/norm(x + c)^2; d*(x(2) + c)/norm(x + c)^2]...
         + [2*a(2)*x(1) + a(4)*x(2); a(3) + a(4)*x(1)];
     
-    control.plt = false;
     nSimulations = 22;
     incrementFactor = 4;
     tic;
@@ -183,7 +144,7 @@ if(convergenceTest)
     end
     t1 = toc;
     parfor k = 1:nSimulations
-    out = heat2d(domain{k}, physical{k}, control, Dc);
+    out = heat2d(domain{k}, physical{k}, Dc);
         FEMtemperatureField{k} = out.Tff;
         difference(k) = sqrt(sum(sum((testTemperatureField{k} - FEMtemperatureField{k}).^2)))/numel(testTemperatureField{k});
         nElementsX(k) = domain{k}.nElX;

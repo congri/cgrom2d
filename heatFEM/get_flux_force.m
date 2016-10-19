@@ -1,4 +1,4 @@
-function [fh] = get_flux_force(domain, physical)
+function [fh] = get_flux_force(domain, qb)
 %Contribution to local force due to heat flux
 
 fh = zeros(4, domain.nEl);
@@ -9,30 +9,30 @@ for e = 1:domain.nEl
     xe(3) = domain.lc(e, 1, 2);
     xe(4) = domain.lc(e, 4, 2);
     N = @(x,y) elementShapeFunctions(x, y, xe, domain.AEl);
-    if(e <= domain.nElX && physical.naturalBoundaries(e, 1))
+    if(e <= domain.nElX && domain.naturalBoundaries(e, 1))
         %lower boundary
-        q = @(x) physical.qbfun{1}(x);
+        q = @(x) qb{1}(x);
         Nlo = @(x) N(x, 0);
         fun = @(x) q(x)*Nlo(x);
         fh(:, e) = fh(:, e) + integral(fun, xe(1), xe(2), 'ArrayValued', true);
     end
-    if(mod(e, domain.nElX) == 0 && physical.naturalBoundaries(e, 2))
+    if(mod(e, domain.nElX) == 0 && domain.naturalBoundaries(e, 2))
         %right boundary
-        q = @(y) physical.qbfun{2}(y);
+        q = @(y) qb{2}(y);
         Nr = @(y) N(1, y);
         fun = @(y) q(y)*Nr(y);
         fh(:, e) = fh(:, e) + integral(fun, xe(3), xe(4), 'ArrayValued', true);
     end
-    if(e > (domain.nElY - 1)*domain.nElX && physical.naturalBoundaries(e, 3))
+    if(e > (domain.nElY - 1)*domain.nElX && domain.naturalBoundaries(e, 3))
         %upper boundary
-        q = @(x) physical.qbfun{3}(x);
+        q = @(x) qb{3}(x);
         Nu = @(x) N(x, 1);
         fun = @(x) q(x)*Nu(x);
         fh(:, e) = fh(:, e) + integral(fun, xe(1), xe(2), 'ArrayValued', true);
     end
-    if(mod(e, domain.nElX) == 1 && physical.naturalBoundaries(e, 4))
+    if(mod(e, domain.nElX) == 1 && domain.naturalBoundaries(e, 4))
         %left boundary
-        q = @(y) physical.qbfun{4}(y);
+        q = @(y) qb{4}(y);
         Nle = @(y) N(0, y);
         fun = @(y) q(y)*Nle(y);
         fh(:, e) = fh(:, e) + integral(fun, xe(3), xe(4), 'ArrayValued', true);
