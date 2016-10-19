@@ -1,4 +1,4 @@
-function [log_q, d_log_q, Tc] = log_q_i(Xi, Tf_i, theta_cf, theta_c, Phi,...
+function [log_q, d_log_q, Tc] = log_q_i(Xi, Tf_i_minus_mu, theta_cf, theta_c, Phi,...
     domainf, domainc)
 
 conductivity = exp(Xi);
@@ -12,7 +12,7 @@ if any(conductivity > 1e6)
 end
 
 [lg_p_c, d_lg_p_c] = log_p_c(Xi, Phi, theta_c.theta, theta_c.sigma);
-[lg_p_cf, d_lg_p_cf, Tc] = log_p_cf(Tf_i, domainc, conductivity, theta_cf);
+[lg_p_cf, d_lg_p_cf, Tc] = log_p_cf(Tf_i_minus_mu, domainc, conductivity, theta_cf);
 
 if(~isscalar(lg_p_c))
     lg_p_c
@@ -47,7 +47,7 @@ if FDcheck
         conductivityFD = conductivity + conductivity.*dXi;
         
         [lg_p_c, ~] = log_p_c(Xi + dXi, Phi, theta_c.theta, theta_c.sigma);
-        [lg_p_cf, ~] = log_p_cf(Tf_i, domainc, conductivityFD, theta_cf);
+        [lg_p_cf, ~] = log_p_cf(Tf_i_minus_mu, domainc, conductivityFD, theta_cf);
         
         log_qFD = lg_p_cf + lg_p_c;
         gradFD(i) = (log_qFD - log_q)/d;

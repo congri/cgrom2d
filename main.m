@@ -58,7 +58,8 @@ for k = 2:(EM.maxIterations + 1)
     %% Test run for step sizes
     disp('test sampling...')
     for i = 1:fineData.nSamples
-        log_qi{i} = @(Xi) log_q_i(Xi, Tf(:, i), theta_cf, theta_c,...
+        Tf_i_minus_mu = Tf(:, i) - theta_cf.mu;
+        log_qi{i} = @(Xi) log_q_i(Xi, Tf_i_minus_mu, theta_cf, theta_c,...
             PhiArray(:, :, i), domainf, domainc);
         %find maximum of qi for thermalization
         %start value has some randomness to drive transitions between local optima
@@ -93,7 +94,8 @@ for k = 2:(EM.maxIterations + 1)
     disp('actual sampling...')
     %% Generate samples from every q_i
     for i = 1:fineData.nSamples
-        log_qi{i} = @(Xi) log_q_i(Xi, Tf(:, i), theta_cf, theta_c,...
+        Tf_i_minus_mu = Tf(:, i) - theta_cf.mu;
+        log_qi{i} = @(Xi) log_q_i(Xi, Tf_i_minus_mu, theta_cf, theta_c,...
             PhiArray(:, :, i), domainf, domainc);
         %sample from every q_i
         out(i) = MCMCsampler(log_qi{i}, Xmax{i}, MCMC(i));
