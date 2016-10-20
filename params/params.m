@@ -1,12 +1,12 @@
 %main parameter file for 2d coarse-graining
 
 %% Temperature field and gradient generating the boundary conditions
-a = [-4 3 2 6];
+a = [-4 10 -8 16];
 Tb = @(x) a(1) + a(2)*x(1) + a(3)*x(2) + a(4)*x(1)*x(2);
-qb{1} = @(x) -4*(a(3) + a(4)*x);      %lower bound
-qb{2} = @(y) 4*(a(2) + a(4)*y);       %right bound
-qb{3} = @(x) 4*(a(3) + a(4)*x);       %upper bound
-qb{4} = @(y) -4*(a(2) + a(4)*y);      %left bound
+qb{1} = @(x) -(a(3) + a(4)*x);      %lower bound
+qb{2} = @(y) (a(2) + a(4)*y);       %right bound
+qb{3} = @(x) (a(3) + a(4)*x);       %upper bound
+qb{4} = @(y) -(a(2) + a(4)*y);      %left bound
 
 %% Initialize domain
 nf = 32;
@@ -28,7 +28,7 @@ domainf = setHeatSource(domainf, zeros(domainf.nEl, 1));
 %% Finescale data params
 fineData.genData = true;    %generate new dataset?
 fineData.dist = 'correlated_binary';   %uniform, gaussian or binary (dist of log conductivity)
-fineData.nSamples = 1;
+fineData.nSamples = 16;
 if strcmp(fineData.dist, 'gaussian')
     fineData.mu = 1.2;      %mean of log of lambda
     fineData.sigma = .3;    %sigma of log of lambda
@@ -36,14 +36,14 @@ elseif (strcmp(fineData.dist, 'uniform') || strcmp(fineData.dist, 'binary')...
         || strcmp(fineData.dist, 'predefined_binary') || strcmp(fineData.dist, 'correlated_binary'))
     %for uniform & binary
     fineData.lo = 1;    %upper and lower bounds on conductivity lambda
-    fineData.up = 10;
+    fineData.up = 100;
     contrast = fineData.up/fineData.lo;
     %for binary
     if (strcmp(fineData.dist, 'binary') || strcmp(fineData.dist, 'correlated_binary'))
-        fineData.p_lo = .7;
+        fineData.p_lo = 0;
         if strcmp(fineData.dist, 'correlated_binary')
-            fineData.lx = .001;
-            fineData.ly = .001;
+            fineData.lx = logspace(-6, -1, fineData.nSamples);
+            fineData.ly = logspace(-6, -1, fineData.nSamples);
             fineData.sigma_f2 = 1; %has this parameter any impact?
         end
     end
@@ -67,8 +67,12 @@ linpathphase1l1 = @(lambda) .5*linealPath(lambda, 1, 'x', 1, fineData, domainc, 
     .5*linealPath(lambda, 1, 'y', 1, fineData, domainc, domainf);
 linpathphase2l1 = @(lambda) .5*linealPath(lambda, 1, 'x', 2, fineData, domainc, domainf) +...
     .5*linealPath(lambda, 1, 'y', 2, fineData, domainc, domainf);
+volFrac1 = @(lambda) .5*linealPath(lambda, 0, 'x', 1, fineData, domainc, domainf) +...
+    .5*linealPath(lambda, 0, 'y', 1, fineData, domainc, domainf);
+volFrac2 = @(lambda) .5*linealPath(lambda, 0, 'x', 2, fineData, domainc, domainf) +...
+    .5*linealPath(lambda, 0, 'y', 2, fineData, domainc, domainf);
 
-phi = {phi_3};
+phi = {phi_1; volFrac2; linpathphase2l1};
 nBasis = numel(phi);
 
 %% Object containing EM optimization params and stats
@@ -86,11 +90,11 @@ else
     %random initialization of W
     theta_cf.W = (2/domainc.nEq)*rand(domainf.nNodes, domainc.nNodes);
 end
-theta_cf.S = 2*eye(domainf.nNodes);
+theta_cf.S = 2*sparse(1:domainf.nNodes, 1:domainf.nNodes, ones(1, domainf.nNodes));
 theta_cf.Sinv = inv(theta_cf.S);
 theta_cf.mu = zeros(domainf.nNodes, 1);
 % theta_c.theta = (1/size(phi, 1))*ones(size(phi, 1), 1);
-theta_c.theta = .2*ones(nBasis, 1);
+theta_c.theta = 0*ones(nBasis, 1);
 theta_c.sigma = 2;
 
 %what kind of prior for theta_c
@@ -103,10 +107,10 @@ prior_hyperparam = [0; 1];                        %parameters a, b of gamma hype
 
 %% MCMC options
 MCMC.method = 'MALA';                                %proposal type: randomWalk, nonlocal or MALA
-MCMC.seed = 8;
+MCMC.seed = 10;
 MCMC.nThermalization = 0;                            %thermalization steps
-MCMC.nSamples = 30;                                 %number of samples
-MCMC.nGap = 200;                                     %decorrelation gap
+MCMC.nSamples = 40;                                 %number of samples
+MCMC.nGap = 400;                                     %decorrelation gap
 MCMC.Xi_start = 20*ones(domainc.nEl, 1);
 %only for random walk
 MCMC.MALA.stepWidth = .005;

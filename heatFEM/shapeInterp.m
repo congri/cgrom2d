@@ -25,7 +25,7 @@ function [W] = shapeInterp(domainc, domainf)
         N(4) = -(1/domainc.AEl)*(x(1) - domainc.lc(E, 2, 1))*(x(2) - domainc.lc(E, 1, 2));
     end
 
-W = zeros(domainf.nNodes, domainc.nNodes);
+W = spalloc(domainf.nNodes, domainc.nNodes, 4*domainf.nNodes);
 %loop through all fine elements
 for e = 1:domainf.nEl
     %loop through local nodes

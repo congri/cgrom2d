@@ -18,7 +18,7 @@ elseif strcmp(fineData.dist, 'correlated_binary')
     p = zeros(domain.nEl, fineData.nSamples);
     cond = zeros(domain.nEl, fineData.nSamples);
     for i = 1:fineData.nSamples
-        p(:, i) = genCorrelatedConductivity(domain, fineData.ly, fineData.lx, fineData.sigma_f2);
+        p(:, i) = genCorrelatedConductivity(domain, fineData.ly(i), fineData.lx(i), fineData.sigma_f2);
         cond(:, i) = fineData.up*ones(domain.nEl, 1).*(p(:, i) > fineData.p_lo) +...
             fineData.lo*ones(domain.nEl, 1).*(p(:, i) <= fineData.p_lo);
         Lambdaf = reshape(cond(:,i), domain.nElX, domain.nElY)';

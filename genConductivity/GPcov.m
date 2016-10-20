@@ -26,7 +26,7 @@ elseif strcmp(type, 'ardSE')
     
     k = exp(log_sigma_f2 - X2/l2(1) - Y2/l2(2));
 
-    log_threshold = -25;
+    log_threshold = -50;
     k(log_sigma_f2 - X2/l2(1) - Y2/l2(2) < log_threshold) = 0;
     k = sparse(k);
 

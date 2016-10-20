@@ -32,7 +32,7 @@ if dir == 'x'
             end
             i = i + 1;
         end
-        i = i + 1;   %jump over to first column in next row
+        i = i + pathLength;   %jump over to first column in next row
     end
     L = samePhase/(maxX*yc);
     

@@ -16,12 +16,12 @@ end
 
 %% Optimal params
 %W matrix
-EM.W(:, :, k) = theta_cf.W;
+EM.W{k} = theta_cf.W;
 %theta
 EM.theta(:, k) = theta_c.theta;
 %sigma
 EM.sigma(k) = theta_c.sigma;
 %S
-EM.S(:, :, k) = theta_cf.S;
+EM.S{k} = theta_cf.S;
 %mu
 EM.mu(:, k) = theta_cf.mu;

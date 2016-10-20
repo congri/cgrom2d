@@ -40,10 +40,13 @@ classdef EMstats
             
             %% for data record, single precision is sufficient
             obj.MCMCStepWidth = zeros(fineData.nSamples, obj.maxIterations + 1, 'single');
-            obj.W = zeros(domainf.nNodes, domainc.nNodes, obj.maxIterations, 'single');
+            w{1} = spalloc(domainf.nNodes, domainc.nNodes, 4*domainf.nNodes);
+            obj.W = repmat(w, obj.maxIterations + 1, 1);
+%             obj.W = zeros(domainf.nNodes, domainc.nNodes, obj.maxIterations, 'single');
             obj.theta = zeros(nBasis, obj.maxIterations + 1, 'single');
             obj.sigma = zeros(obj.maxIterations + 1, 1, 'single');
-            obj.S = zeros(domainf.nNodes, domainf.nNodes, obj.maxIterations + 1, 'single');
+            s{1} = spalloc(domainf.nNodes, domainf.nNodes, domainf.nNodes);
+            obj.S = repmat(s, obj.maxIterations + 1, 1);
             obj.mu = zeros(domainf.nNodes, obj.maxIterations, 'single');
         end
         
@@ -91,9 +94,9 @@ classdef EMstats
             
             
             subplot(2, 2, 3)
-            Splt = zeros(size(obj.S, 1), obj.maxIterations + 1);
+            Splt = zeros(size(obj.S{1}, 1), obj.maxIterations + 1);
             for i = 1:(obj.maxIterations + 1)
-                Splt(:, i) = diag(obj.S(:, :, i));
+                Splt(:, i) = diag(obj.S{i});
             end
             p_S = plot(iterations, Splt, 'k');
             set(gca, 'fontsize', 15)

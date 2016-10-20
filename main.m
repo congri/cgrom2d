@@ -57,7 +57,7 @@ collectData;
 for k = 2:(EM.maxIterations + 1)
     %% Test run for step sizes
     disp('test sampling...')
-    for i = 1:fineData.nSamples
+    parfor i = 1:fineData.nSamples
         Tf_i_minus_mu = Tf(:, i) - theta_cf.mu;
         log_qi{i} = @(Xi) log_q_i(Xi, Tf_i_minus_mu, theta_cf, theta_c,...
             PhiArray(:, :, i), domainf, domainc);
@@ -93,7 +93,7 @@ for k = 2:(EM.maxIterations + 1)
     
     disp('actual sampling...')
     %% Generate samples from every q_i
-    for i = 1:fineData.nSamples
+    parfor i = 1:fineData.nSamples
         Tf_i_minus_mu = Tf(:, i) - theta_cf.mu;
         log_qi{i} = @(Xi) log_q_i(Xi, Tf_i_minus_mu, theta_cf, theta_c,...
             PhiArray(:, :, i), domainf, domainc);
@@ -142,7 +142,7 @@ for k = 2:(EM.maxIterations + 1)
     
     %% Compute params of p_cf
     if(~Winterp)
-        %this still has to be generalized to 2d
+        %this still has to be generalized to 2d; also, W is not sparse anymore
         Tc_dyadic_mean = TcDyadicMean(Tc_samples, fineData.nSamples, MCMC);
         Wa_mean = mean(Wa, 3);
         theta_cf.W = compW(Tc_dyadic_mean,  Wa_mean,...
@@ -150,8 +150,9 @@ for k = 2:(EM.maxIterations + 1)
     end
     
     %decelerate convergence of S
-    lowerBoundS = 1e-10;
-    theta_cf.S = (1 - mix_S)*diag(mean(p_cf_exponent, 2)) + mix_S*theta_cf.S + lowerBoundS*eye(size(theta_cf.S, 1));
+    lowerBoundS = 1e-6;
+    theta_cf.S = (1 - mix_S)*sparse(1:domainf.nNodes, 1:domainf.nNodes, mean(p_cf_exponent, 2))...
+        + mix_S*theta_cf.S + lowerBoundS*sparse(1:domainf.nNodes, 1:domainf.nNodes, lowerBoundS*ones(1, domainf.nNodes));
     theta_cf.Sinv = inv(theta_cf.S);
     
     %% Compute theta_c and sigma if there is a prior on theta_c, sigma

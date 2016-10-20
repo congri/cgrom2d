@@ -7,13 +7,15 @@ tic;
 load('./data/fineData/fineData')
 %Generate test data point
 fineData.nSamples = 1;
+fineData.lx = 5e-2;
+fineData.ly = 5e-2;
 [cond, Tf] = genData(domainf, fineData);
 
 %design Matrix for p_c
 Phi = designMatrix(phi, cond, domainf, domainc);
 
 %% Sample from p_c
-nSamples_p_c = 2000;
+nSamples_p_c = 200;
 Xsamples = mvnrnd(Phi*theta_c.theta, (theta_c.sigma^2)*eye(domainc.nEl), nSamples_p_c)';
 LambdaSamples = exp(Xsamples);
 
@@ -50,13 +52,20 @@ LambdacMean = mean(LambdaSamples, 2)
 LambdacMean = reshape(LambdacMean, domainc.nElX, domainc.nElY)';
 LambdacMeanPlot = zeros(size(LambdacMean) + 1);
 LambdacMeanPlot(1:(end - 1), 1:(end - 1)) = LambdacMean;
-% LambdacMeanPlot(2, 2) = 95;
 [LambdacX, LambdacY] = meshgrid(linspace(0, 1, domainc.nElX + 1), linspace(0, 1, domainc.nElY + 1));
 
 Lambdaf = reshape(cond, domainf.nElX, domainf.nElY)';
 [LambdafX, LambdafY] = meshgrid(linspace(0, 1, domainf.nElX + 1), linspace(0, 1, domainf.nElY + 1));
 LambdafPlot = zeros(size(Lambdaf) + 1);
 LambdafPlot(1:(end - 1), 1:(end - 1)) = Lambdaf;
+
+%Error measure: exp(1/2sigma^2 * (T_true - T_mean)^2) - 1
+%Is 0 if the mean matches the truth and infinite if (T_true - T_mean)^2 is infinite. Scaled with
+%predictive variance
+err = sqrt((1./(2*Tf_std'.^2)).*(Tf - Tf_mean).^2);
+err_mat = reshape(err, domainf.nElX + 1, domainf.nElY + 1);
+err_mat = err_mat';
+
 
 cmin = min([min(min(Tf_mean_mat)), min(min(Tf_true_mat))]);
 cmax = max([max(max(Tf_mean_mat)), max(max(Tf_true_mat))]);
@@ -85,12 +94,13 @@ caxis([cmin, cmax])
 
 subplot(3,2,3)
 pcolor(LambdacX, LambdacY, LambdacMeanPlot)
-title('Eff. conductivity')
+title('Mean eff. conductivity')
 xlabel('x')
 ylabel('y')
 grid off
 colormap(cmp)
 colorbar
+caxis([min(min(LambdacMeanPlot(1:(end - 1), 1:(end - 1)))) max(max(LambdacMeanPlot(1:(end - 1), 1:(end - 1))))])
 axis square
 
 subplot(3,2,4)
@@ -110,7 +120,21 @@ ylabel('y')
 grid off
 colormap(cmp)
 colorbar
-caxis([min(min(LambdafPlot)), max(max(LambdafPlot))])
+caxis([min(min(LambdafPlot(1:(end - 1), 1:(end - 1)))), max(max(LambdafPlot(1:(end - 1), 1:(end - 1))))])
+axis square
+
+% subplot(3,2,6)
+% surf(Xcoord, Ycoord, Tf_mean_mat)
+% hold on
+% surf(Xcoord, Ycoord, Tf_true_mat)
+% axis square
+
+subplot(3,2,6)
+contourf(Xcoord, Ycoord, err_mat, 256, 'linestyle', 'none')
+title('Error measure')
+xlabel('x')
+ylabel('y')
+colorbar
 axis square
 
 runtime = toc;
