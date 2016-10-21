@@ -3,12 +3,18 @@ function [d_r] = FEMgrad(FEMout, domain, conductivity)
 %ONLY VALID FOR ISOTROPIC HEAT CONDUCTIVITY MATRIX D!!!
 
 
+    function gradKK = get_glob_stiff_gradient(grad_loc_k)
+        gradKK = sparse(domain.Equations(:,1), domain.Equations(:,2), grad_loc_k(domain.kIndex));
+    end
+
+
+
 % (d/d Lambda_e) k^(e) = (1/Lambda_e) k^(e)     as k^(e) linear in Lambda_e
 d_r = zeros(domain.nEl, domain.nEq);
 for e = 1:domain.nEl
     gradLocStiff = zeros(4, 4, domain.nEl);
     gradLocStiff(:, :, e) = FEMout.localStiffness(:, :, e)/conductivity(e);     %gradient of local stiffnesses
-    gradK = get_glob_stiff2(domain, gradLocStiff);
+    gradK = get_glob_stiff_gradient(gradLocStiff);
     gradF = get_glob_force_gradient(domain, gradLocStiff(:, :, e), e);
     
     d_r(e, :) = (gradK*FEMout.naturalTemperatures - gradF)';

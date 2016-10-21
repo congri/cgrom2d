@@ -2,12 +2,15 @@ function [Out] = heat2d(domain, D)
 %2D heat conduction main function
 %Gives back temperature on point x
 
-%get_loc_stiff as nested function for performance 
+%get_loc_stiff as nested function for performance
+Dmat = spalloc(8, 8, 16);
 function [k] = get_loc_stiff2(Bvec, D)
     %Gives the local stiffness matrix
 
-    Z = zeros(2, 2);
-    Dmat = [D Z Z Z; Z D Z Z; Z Z D Z; Z Z Z D];
+    Dmat(1:2, 1:2) = D;
+    Dmat(3:4, 3:4) = D;
+    Dmat(5:6, 5:6) = D;
+    Dmat(7:8, 7:8) = D;
 
     k = Bvec'*Dmat*Bvec;
 end

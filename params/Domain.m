@@ -27,6 +27,7 @@ classdef Domain
         globalNodeNumber            %globalNodeNumber holds the global node number, given the element number as row
                                     %and the local node number as column indices
         Bvec                        %Shape function gradient array, precomputed for performance
+        
         essentialBoundary           %essential boundary (yes or no) given local node and element number
         lm                          %lm takes element number as row and local node number as column index
                                     %and gives equation number

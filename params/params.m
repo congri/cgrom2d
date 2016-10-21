@@ -9,7 +9,7 @@ qb{3} = @(x) (a(3) + a(4)*x);       %upper bound
 qb{4} = @(y) -(a(2) + a(4)*y);      %left bound
 
 %% Initialize domain
-nf = 64;
+nf = 128;
 nc = 2;
 assert(mod(nf, nc) == 0, 'error: nF not divisible by nC')
 domainc = Domain(nc, nc, 1, 1);
