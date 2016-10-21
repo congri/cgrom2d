@@ -33,12 +33,10 @@ if fineData.genData
     for i = 1:fineData.nSamples
         sumPhiSq = sumPhiSq + PhiArray(:,:,i)'*PhiArray(:,:,i);
     end
-    sumPhiSqInv = inv(sumPhiSq);
     % save data
-    save('./data/fineData/fineData', 'cond', 'Tf', 'PhiArray', 'sumPhiSqInv');
+    save('./data/fineData/fineData', 'cond', 'Tf', 'PhiArray');
 else
     load('./data/fineData/fineData')
-    sumPhiSq = inv(sumPhiSqInv);
 end
 %to save memory, we can clear unnecessary fields from finescale domain after data generation
 domainf = domainf.shrink();
@@ -169,7 +167,7 @@ for k = 2:(EM.maxIterations + 1)
 
     disp('M-step: find optimal params')
     [theta_c] = optTheta_c(theta_c, fineData, domainc.nEl, XNormSqMean,...
-        sumPhiTXmean, sumPhiSq, sumPhiSqInv, mix_sigma, prior_type, prior_hyperparam);
+        sumPhiTXmean, sumPhiSq, prior_type, prior_hyperparam);
     disp('M-step done, current theta:')
         
     curr_theta = theta_c.theta
@@ -226,7 +224,6 @@ for k = 2:(EM.maxIterations + 1)
         for i = 1:fineData.nSamples
             sumPhiSq = sumPhiSq + PhiArray(:,:,i)'*PhiArray(:,:,i);
         end
-        sumPhiSqInv = inv(sumPhiSq);
     end
     % collect data in data arrays
     collectData;
