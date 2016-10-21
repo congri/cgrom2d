@@ -1,21 +1,17 @@
-function [Tf_mean_mat, Tf_std_mat] = plotResult(theta_c, theta_cf, domainc, domainf, phi, fineData)
+function [Tf_mean_mat, Tf_std_mat] = plotResult(theta_c, theta_cf, domainc, domainf, phi)
 %We sample the resulting distribution p(y|x, theta_c, theta_cf) here and compare to the true
 %solution
 
 tic;
 %load finescale data from last optimization
-load('./data/fineData/fineData')
-%Generate test data point
-fineData.nSamples = 1;
-fineData.lx = 4e-3;
-fineData.ly = 4e-3;
-[cond, Tf] = genData(domainf, fineData);
+load('./data/fineData/testData')
+
 
 %design Matrix for p_c
-Phi = designMatrix(phi, cond, domainf, domainc);
+Phi = designMatrix(phi, condTest, domainf, domainc);
 
 %% Sample from p_c
-nSamples_p_c = 1000;
+nSamples_p_c = 100;
 Xsamples = mvnrnd(Phi*theta_c.theta, (theta_c.sigma^2)*eye(domainc.nEl), nSamples_p_c)';
 LambdaSamples = exp(Xsamples);
 
@@ -45,7 +41,7 @@ Tf_std_mat = reshape(Tf_std, domainf.nElX + 1, domainf.nElY + 1);
 Tf_std_mat = Tf_std_mat';
 [Xcoord, Ycoord] = meshgrid(linspace(0, 1, domainf.nElX + 1), linspace(0, 1, domainf.nElY + 1));
 
-Tf_true_mat = reshape(Tf, domainf.nElX + 1, domainf.nElY + 1);
+Tf_true_mat = reshape(TfTest, domainf.nElX + 1, domainf.nElY + 1);
 Tf_true_mat = Tf_true_mat';
 
 LambdacMean = mean(LambdaSamples, 2)
@@ -54,13 +50,13 @@ LambdacMeanPlot = zeros(size(LambdacMean) + 1);
 LambdacMeanPlot(1:(end - 1), 1:(end - 1)) = LambdacMean;
 [LambdacX, LambdacY] = meshgrid(linspace(0, 1, domainc.nElX + 1), linspace(0, 1, domainc.nElY + 1));
 
-Lambdaf = reshape(cond, domainf.nElX, domainf.nElY)';
+Lambdaf = reshape(condTest, domainf.nElX, domainf.nElY)';
 [LambdafX, LambdafY] = meshgrid(linspace(0, 1, domainf.nElX + 1), linspace(0, 1, domainf.nElY + 1));
 LambdafPlot = zeros(size(Lambdaf) + 1);
 LambdafPlot(1:(end - 1), 1:(end - 1)) = Lambdaf;
 
 %Error measure
-err = sqrt((1./(2*Tf_std'.^2)).*(Tf - Tf_mean).^2);
+err = sqrt((1./(2*Tf_std'.^2)).*(TfTest - Tf_mean).^2);
 err_mat = reshape(err, domainf.nElX + 1, domainf.nElY + 1);
 err_mat = err_mat';
 

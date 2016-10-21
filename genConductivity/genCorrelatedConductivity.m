@@ -18,9 +18,7 @@ Ysq = sq_dist(x(2,:));
 
 K = GPcov(Xsq, Ysq, 'ardSE', params);
 m = zeros(1, domain.nEl);
-disp('gen p')
 p = mvnrnd(m, K, nSamples);
-disp('p generated')
 p = p';
 P = reshape(p, domain.nElX, domain.nElY);
 plt = false;

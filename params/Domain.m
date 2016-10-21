@@ -228,8 +228,6 @@ classdef Domain
             domainObj.boundaryType = [];
             domainObj.lx = [];
             domainObj.ly = [];
-            domainObj.lElX = [];
-            domainObj.lElY = [];
             domainObj.AEl = [];
             domainObj.nEq = [];
             domainObj.nodalCoordinates = [];

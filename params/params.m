@@ -9,7 +9,7 @@ qb{3} = @(x) (a(3) + a(4)*x);       %upper bound
 qb{4} = @(y) -(a(2) + a(4)*y);      %left bound
 
 %% Initialize domain
-nf = 128;
+nf = 64;
 nc = 2;
 assert(mod(nf, nc) == 0, 'error: nF not divisible by nC')
 domainc = Domain(nc, nc, 1, 1);
@@ -36,14 +36,14 @@ elseif (strcmp(fineData.dist, 'uniform') || strcmp(fineData.dist, 'binary')...
         || strcmp(fineData.dist, 'predefined_binary') || strcmp(fineData.dist, 'correlated_binary'))
     %for uniform & binary
     fineData.lo = 1;    %upper and lower bounds on conductivity lambda
-    fineData.up = 100;
+    fineData.up = 10;
     contrast = fineData.up/fineData.lo;
     %for binary
     if (strcmp(fineData.dist, 'binary') || strcmp(fineData.dist, 'correlated_binary'))
         fineData.p_lo = 0;
         if strcmp(fineData.dist, 'correlated_binary')
-            fineData.lx = 1e-2;
-            fineData.ly = 1e-2;
+            fineData.lx = .1*domainf.lElX;
+            fineData.ly = .1*domainf.lElY;
             fineData.sigma_f2 = 1; %has this parameter any impact?
         end
     end
@@ -77,7 +77,7 @@ nBasis = numel(phi);
 
 %% Object containing EM optimization params and stats
 EM = EMstats;
-basisUpdateGap = 5;        %After this number of iterations, include new basis function in p_c
+basisUpdateGap = 15;        %After this number of iterations, include new basis function in p_c
 EM = EM.setMaxIterations(1*basisUpdateGap - 1);
 EM = EM.prealloc(fineData, domainf, domainc, nBasis);           %preallocation of data arrays
 

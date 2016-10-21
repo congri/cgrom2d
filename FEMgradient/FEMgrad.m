@@ -9,7 +9,7 @@ for e = 1:domain.nEl
     gradLocStiff = zeros(4, 4, domain.nEl);
     gradLocStiff(:, :, e) = FEMout.localStiffness(:, :, e)/conductivity(e);     %gradient of local stiffnesses
     gradK = get_glob_stiff2(domain, gradLocStiff);
-    gradF = get_glob_force_gradient(domain, gradLocStiff);
+    gradF = get_glob_force_gradient(domain, gradLocStiff(:, :, e), e);
     
     d_r(e, :) = (gradK*FEMout.naturalTemperatures - gradF)';
     

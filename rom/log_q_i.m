@@ -35,7 +35,7 @@ end
 
 
 %Finite difference gradient check
-FDcheck = false;
+FDcheck = true;
 if FDcheck
     disp('Gradient check log q_i')
     d = 1e-5;

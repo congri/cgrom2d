@@ -34,7 +34,16 @@ if fineData.genData
         sumPhiSq = sumPhiSq + PhiArray(:,:,i)'*PhiArray(:,:,i);
     end
     % save data
-    save('./data/fineData/fineData', 'cond', 'Tf', 'PhiArray');
+    save('./data/fineData/fineData', 'cond', 'Tf', 'PhiArray', 'sumPhiSq');
+    
+    %Generate test data
+    nTest = 1;
+    nTemp = fineData.nSamples;
+    fineData.nSamples = nTest;
+    [condTest, TfTest] = genData(domainf, fineData);
+    fineData.nSamples = nTemp;
+    save('./data/fineData/testData', 'condTest', 'TfTest');
+    clear nTest nTemp condTest TfTest;
 else
     load('./data/fineData/fineData')
 end
@@ -59,7 +68,7 @@ collectData;
 for k = 2:(EM.maxIterations + 1)
     %% Test run for step sizes
     disp('test sampling...')
-    parfor i = 1:fineData.nSamples
+    for i = 1:fineData.nSamples
         Tf_i_minus_mu = Tf(:, i) - theta_cf.mu;
         log_qi{i} = @(Xi) log_q_i(Xi, Tf_i_minus_mu, theta_cf, theta_c,...
             PhiArray(:, :, i), domainc);
@@ -95,7 +104,7 @@ for k = 2:(EM.maxIterations + 1)
     
     disp('actual sampling...')
     %% Generate samples from every q_i
-    parfor i = 1:fineData.nSamples
+    for i = 1:fineData.nSamples
         Tf_i_minus_mu = Tf(:, i) - theta_cf.mu;
         log_qi{i} = @(Xi) log_q_i(Xi, Tf_i_minus_mu, theta_cf, theta_c,...
             PhiArray(:, :, i), domainc);
