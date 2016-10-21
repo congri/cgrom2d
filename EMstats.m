@@ -26,10 +26,6 @@ classdef EMstats
     methods
         
         function obj = setMaxIterations(obj, maxIterations)
-            %% some tests
-            assert((maxIterations > 0), 'Number of EM iterations has to be > 0')
-            assert((mod(maxIterations, 1) == 0), 'Number of EM iterations must be integer')
-            assert(all(size(maxIterations)) == 1, 'maximum number of iterations must be a scalar')
             
             %% set value
             obj.maxIterations = int32(maxIterations);

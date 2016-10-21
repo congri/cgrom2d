@@ -2,7 +2,7 @@ function [g] = get_glob(d)
 %Get global node number from global element number
 %and local node number
 
-g = zeros(d.nEl, 4);
+g = zeros(d.nEl, 4, 'int32');
 for e = 1:d.nEl
     for l = 1:4
         g(e,1) = e + floor((e - 1)/d.nElX);

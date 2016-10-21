@@ -1,4 +1,4 @@
-function [Tfinterp] = plotResult(theta_c, theta_cf, domainc, domainf, phi, fineData)
+function [Tf_mean_mat, Tf_std_mat] = plotResult(theta_c, theta_cf, domainc, domainf, phi, fineData)
 %We sample the resulting distribution p(y|x, theta_c, theta_cf) here and compare to the true
 %solution
 
@@ -7,15 +7,15 @@ tic;
 load('./data/fineData/fineData')
 %Generate test data point
 fineData.nSamples = 1;
-fineData.lx = 5e-2;
-fineData.ly = 5e-2;
+fineData.lx = 4e-3;
+fineData.ly = 4e-3;
 [cond, Tf] = genData(domainf, fineData);
 
 %design Matrix for p_c
 Phi = designMatrix(phi, cond, domainf, domainc);
 
 %% Sample from p_c
-nSamples_p_c = 200;
+nSamples_p_c = 1000;
 Xsamples = mvnrnd(Phi*theta_c.theta, (theta_c.sigma^2)*eye(domainc.nEl), nSamples_p_c)';
 LambdaSamples = exp(Xsamples);
 
@@ -59,9 +59,7 @@ Lambdaf = reshape(cond, domainf.nElX, domainf.nElY)';
 LambdafPlot = zeros(size(Lambdaf) + 1);
 LambdafPlot(1:(end - 1), 1:(end - 1)) = Lambdaf;
 
-%Error measure: exp(1/2sigma^2 * (T_true - T_mean)^2) - 1
-%Is 0 if the mean matches the truth and infinite if (T_true - T_mean)^2 is infinite. Scaled with
-%predictive variance
+%Error measure
 err = sqrt((1./(2*Tf_std'.^2)).*(Tf - Tf_mean).^2);
 err_mat = reshape(err, domainf.nElX + 1, domainf.nElY + 1);
 err_mat = err_mat';
@@ -80,7 +78,9 @@ title('Pred. mean')
 axis square
 colormap(cmp)
 colorbar
-caxis([cmin, cmax])
+hold
+plot([0 1], [.5 .5], 'w', 'linewidth', 3)
+% caxis([cmin, cmax])
 
 subplot(3,2,1)
 contourf(Xcoord, Ycoord, Tf_true_mat, 256, 'linestyle', 'none')
@@ -90,7 +90,9 @@ title('True finescale output')
 axis square
 colormap(cmp)
 colorbar
-caxis([cmin, cmax])
+hold
+plot([0 1], [.5 .5], 'w', 'linewidth', 3)
+% caxis([cmin, cmax])
 
 subplot(3,2,3)
 pcolor(LambdacX, LambdacY, LambdacMeanPlot)
@@ -137,7 +139,21 @@ ylabel('y')
 colorbar
 axis square
 
-runtime = toc;
+%line cut through middle
+s = size(Tf_true_mat);
+T_true_cut = Tf_true_mat(floor(s(1)/2), :);
+T_pred_cut = Tf_mean_mat(floor(s(1)/2), :);
+pred_std = Tf_std_mat(floor(s(1)/2), :);
+figure
+x = linspace(0, 1, s(2));
+shadedErrorBar(x, T_pred_cut, pred_std);
+hold
+plot(x, T_true_cut, 'linewidth', 3)
+axis square
+xlabel('x')
+ylabel('T')
+
+runtime = toc
 end
 
 

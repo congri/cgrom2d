@@ -17,6 +17,9 @@ rng('shuffle')  %system time seed
 %% Load params
 params;
 
+%% Open parallel pool
+parPoolInit(fineData.nSamples);
+
 %% Generate finescale dataset
 if fineData.genData
     [cond, Tf] = genData(domainf, fineData);
@@ -37,13 +40,14 @@ else
     load('./data/fineData/fineData')
     sumPhiSq = inv(sumPhiSqInv);
 end
+%to save memory, we can clear unnecessary fields from finescale domain after data generation
+domainf = domainf.shrink();
+
+
 for i = 1:fineData.nSamples
     %take MCMC initializations at mode of p_c
     MCMC(i).Xi_start = PhiArray(:, :, i)*theta_c.theta;
 end
-
-%% Open parallel pool
-parPoolInit(fineData.nSamples);
 
 %% EM optimization - main body
 %store handle to every q_i in a cell array lq
@@ -60,7 +64,7 @@ for k = 2:(EM.maxIterations + 1)
     parfor i = 1:fineData.nSamples
         Tf_i_minus_mu = Tf(:, i) - theta_cf.mu;
         log_qi{i} = @(Xi) log_q_i(Xi, Tf_i_minus_mu, theta_cf, theta_c,...
-            PhiArray(:, :, i), domainf, domainc);
+            PhiArray(:, :, i), domainc);
         %find maximum of qi for thermalization
         %start value has some randomness to drive transitions between local optima
         X_start{i} = normrnd(MCMC(i).Xi_start, .01);
@@ -96,7 +100,7 @@ for k = 2:(EM.maxIterations + 1)
     parfor i = 1:fineData.nSamples
         Tf_i_minus_mu = Tf(:, i) - theta_cf.mu;
         log_qi{i} = @(Xi) log_q_i(Xi, Tf_i_minus_mu, theta_cf, theta_c,...
-            PhiArray(:, :, i), domainf, domainc);
+            PhiArray(:, :, i), domainc);
         %sample from every q_i
         out(i) = MCMCsampler(log_qi{i}, Xmax{i}, MCMC(i));
         %avoid very low acceptances

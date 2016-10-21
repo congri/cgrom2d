@@ -1,4 +1,4 @@
-function [p, P] = genCorrelatedConductivity(domain, l1, l2, sigma_f2)
+function [p, P] = genCorrelatedConductivity(domain, l1, l2, sigma_f2, nSamples)
 %Generates spatially correlated random samples
 
 %Compute coordinates of element centers
@@ -18,7 +18,9 @@ Ysq = sq_dist(x(2,:));
 
 K = GPcov(Xsq, Ysq, 'ardSE', params);
 m = zeros(1, domain.nEl);
-p = mvnrnd(m, K);
+disp('gen p')
+p = mvnrnd(m, K, nSamples);
+disp('p generated')
 p = p';
 P = reshape(p, domain.nElX, domain.nElY);
 plt = false;

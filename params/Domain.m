@@ -64,14 +64,14 @@ classdef Domain
             domainObj.nEl = domainObj.nElX*domainObj.nElY;
             domainObj.nNodes = (domainObj.nElX + 1)*(domainObj.nElY + 1);
             domainObj.AEl = domainObj.lElX*domainObj.lElY;
-            domainObj.boundaryNodes = [1:(domainObj.nElX + 1),...
+            domainObj.boundaryNodes = int32([1:(domainObj.nElX + 1),...
                 2*(domainObj.nElX + 1):(domainObj.nElX + 1):(domainObj.nElX + 1)*(domainObj.nElY + 1),...
                 ((domainObj.nElX + 1)*(domainObj.nElY + 1) - 1):(-1):((domainObj.nElX + 1)*domainObj.nElY + 1),...
-                (domainObj.nElX + 1)*((domainObj.nElY - 1):(-1):1) + 1];
-            domainObj.boundaryElements = [1:domainObj.nElX,...
+                (domainObj.nElX + 1)*((domainObj.nElY - 1):(-1):1) + 1]);
+            domainObj.boundaryElements = int32([1:domainObj.nElX,...
                 2*(domainObj.nElX):(domainObj.nElX):(domainObj.nElX*domainObj.nElY),...
                 ((domainObj.nElX)*(domainObj.nElY) - 1):(-1):(domainObj.nElX*(domainObj.nElY - 1) + 1),...
-                (domainObj.nElX)*((domainObj.nElY - 2):(-1):1) + 1];
+                (domainObj.nElX)*((domainObj.nElY - 2):(-1):1) + 1]);
             
             %local coordinate array. First index is element number, 2 is local node, 3 is x or y
             domainObj.lc = get_loc_coord(domainObj);
@@ -90,6 +90,7 @@ classdef Domain
             end
             domainObj.id = get_id(domainObj.nodalCoordinates);
             [domainObj.Equations, domainObj.LocalNode] = get_equations(domainObj.nEl, domainObj.lm);
+            domainObj.Equations = double(domainObj.Equations);
             domainObj.kIndex = sub2ind([4 4 domainObj.nEl], domainObj.LocalNode(:,1),...
                 domainObj.LocalNode(:,2), domainObj.LocalNode(:,3));
         end
@@ -142,7 +143,7 @@ classdef Domain
             domainObj.boundaryType = true(1, 2*domainObj.nElX + 2*domainObj.nElY);
             domainObj.boundaryType(natNodes) = false;
             domainObj.essentialNodes = domainObj.boundaryNodes(domainObj.boundaryType);
-            domainObj.naturalNodes = domainObj.boundaryNodes(~domainObj.boundaryType);
+            domainObj.naturalNodes = int32(domainObj.boundaryNodes(~domainObj.boundaryType));
             
             %Set essential temperatures
             domainObj.essentialTemperatures = NaN*ones(1, domainObj.nNodes);
@@ -211,6 +212,35 @@ classdef Domain
             
             %Finally set local forces due to natural boundaries
             domainObj.fh = get_flux_force(domainObj, qb);
+        end
+        
+        function domainObj = shrink(domainObj)
+            %To save memory. We use that on finescale domain to save memory
+            domainObj.lc = [];
+            domainObj.Equations = [];
+            domainObj.kIndex = [];
+            domainObj.boundaryNodes = [];
+            domainObj.essentialNodes = [];
+            domainObj.essentialTemperatures = [];
+            domainObj.naturalNodes = [];
+            domainObj.boundaryElements = [];
+            domainObj.naturalBoundaries = [];
+            domainObj.boundaryType = [];
+            domainObj.lx = [];
+            domainObj.ly = [];
+            domainObj.lElX = [];
+            domainObj.lElY = [];
+            domainObj.AEl = [];
+            domainObj.nEq = [];
+            domainObj.nodalCoordinates = [];
+            domainObj.globalNodeNumber =[];
+            domainObj.Bvec = [];
+            domainObj.essentialBoundary = [];
+            domainObj.lm = [];
+            domainObj.id = [];
+            domainObj.LocalNode = [];
+            domainObj.fs = [];
+            domainObj.fh = [];
         end
     end
     
