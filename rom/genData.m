@@ -82,7 +82,7 @@ end
 Tf = zeros(domain.nNodes, fineData.nSamples);
 D{1} = zeros(2, 2, domain.nEl);
 D = repmat(D, fineData.nSamples, 1);
-parfor i = 1:fineData.nSamples
+for i = 1:fineData.nSamples
     %Conductivity matrix D, only consider isotropic materials here
     for j = 1:domain.nEl
         D{i}(:, :, j) =  cond(j, i)*eye(2);
