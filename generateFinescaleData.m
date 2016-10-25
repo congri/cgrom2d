@@ -15,7 +15,7 @@ qb{3} = @(x) (a(3) + a(4)*x);       %upper bound
 qb{4} = @(y) -(a(2) + a(4)*y);      %left bound
 
 %% Generate finescale domain
-nf = 512;       %Should be 2^n
+nf = 128;       %Should be 2^n
 disp('Generate domain...')
 domainf = Domain(nf, nf, 1, 1);
 domainf = setBoundaries(domainf, 2:(4*nf), Tb, qb);           %ATTENTION: natural nodes have to be set manually

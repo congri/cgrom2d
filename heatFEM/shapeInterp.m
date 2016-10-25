@@ -25,25 +25,23 @@ function [W] = shapeInterp(domainc, domainf)
         N(4) = -(1/domainc.AEl)*(x(1) - domainc.lc(E, 2, 1))*(x(2) - domainc.lc(E, 1, 2));
     end
 
+tic
 W = spalloc(domainf.nNodes, domainc.nNodes, 4*domainf.nNodes);
-%loop through all fine elements
-for e = 1:domainf.nEl
-    %loop through local nodes
-    for ln = 1:4
-        %coordinate of fine node
-        x(1) = domainf.lc(e, ln, 1);
-        x(2) = domainf.lc(e, ln, 2);
-        [N, E] = shapeFunctionValues2(x);
-        
-        %row index of W
-        r = domainf.globalNodeNumber(e, ln);
-        %column indices of W, 4 for every local node of E
-        c = domainc.globalNodeNumber(E, :);
-        
-        %Assign shape function weights to matrix W
-        W(r, c) = N;
-    end
+for n = 1:domainf.nNodes
+    %coordinate of fine node
+    x(1) = domainf.nodalCoordinates(1, n);
+    x(2) = domainf.nodalCoordinates(2, n);
+    [N, E] = shapeFunctionValues2(x);
+    
+    %row index of W
+    r = n;
+    %column indices of W, 4 for every local node of E
+    c = domainc.globalNodeNumber(E, :);
+    
+    %Assign shape function weights to matrix W
+    W(r, c) = N;
 end
+W_assembly_time = toc
 
 end
 
