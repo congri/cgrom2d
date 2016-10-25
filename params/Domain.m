@@ -1,7 +1,7 @@
 classdef Domain
     %class describing the finite element domain
 
-    properties (SetAccess = private)
+    properties (SetAccess = public)
         
         nElX = 10;                  %number of finite elements in each direction; not tested for nElX ~= nElY
         nElY = 10;

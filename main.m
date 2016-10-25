@@ -14,41 +14,41 @@ addpath('./genConductivity')
 
 rng('shuffle')  %system time seed
 
-%% Load params
-params;
-
 %% Open parallel pool
-parPoolInit(fineData.nSamples);
+parPoolInit();
 
-%% Generate finescale dataset
-if fineData.genData
-    [cond, Tf] = genData(domainf, fineData);
+%% Generate or load finescale dataset
+genData = true;    %load data from disc if false
+if genData
+    generateFinescaleData;
+    %load params
+    load('./data/fineData/fineDataParams');
+    %load finescale temperatures
+    load('./data/fineData/fineData', 'Tf');
+    %Load params
+    params;
     % Compute and store design matrix for each data point
-    PhiArray = zeros(domainc.nEl, numel(phi), fineData.nSamples);
-    for i = 1:fineData.nSamples
-        PhiArray(:, :, i) = designMatrix(phi, cond(:, i), domainf, domainc);
-    end
+    PhiArray = designMatrix(phi, domainf, domainc);
     % Compute inverse of sum_i Phi^T(x_i)^Phi(x_i)
     sumPhiSq = zeros(size(phi, 1), size(phi, 1));
     for i = 1:fineData.nSamples
         sumPhiSq = sumPhiSq + PhiArray(:,:,i)'*PhiArray(:,:,i);
     end
-    % save data
-    save('./data/fineData/fineData', 'cond', 'Tf', 'PhiArray', 'sumPhiSq');
-    
-    %Generate test data
-    nTest = 1;
-    nTemp = fineData.nSamples;
-    fineData.nSamples = nTest;
-    [condTest, TfTest] = genData(domainf, fineData);
-    fineData.nSamples = nTemp;
-    save('./data/fineData/testData', 'condTest', 'TfTest');
-    clear nTest nTemp condTest TfTest;
+    %shrink finescale domain object to save memory
+    domainf = domainf.shrink();
+    save('./data/fineData/designMatrix', 'PhiArray', 'sumPhiSq');
 else
-    load('./data/fineData/fineData')
+    %load params
+    load('./data/fineData/fineDataParams');
+    %load finescale temperatures
+    load('./data/fineData/fineData', 'Tf');
+    %load design matrix
+    load('./data/fineData/designMatrix');
+    %Load params
+    params;
+    %shrink finescale domain object to save memory
+    domainf = domainf.shrink();
 end
-%to save memory, we can clear unnecessary fields from finescale domain after data generation
-domainf = domainf.shrink();
 
 
 for i = 1:fineData.nSamples
@@ -162,9 +162,9 @@ for k = 2:(EM.maxIterations + 1)
     
     %decelerate convergence of S
     lowerBoundS = 1e-6;
-    theta_cf.S = (1 - mix_S)*sparse(1:domainf.nNodes, 1:domainf.nNodes, mean(p_cf_exponent, 2))...
-        + mix_S*theta_cf.S + lowerBoundS*sparse(1:domainf.nNodes, 1:domainf.nNodes, lowerBoundS*ones(1, domainf.nNodes));
-    theta_cf.Sinv = inv(theta_cf.S);
+    theta_cf.S = (1 - mix_S)*mean(p_cf_exponent, 2)...
+        + mix_S*theta_cf.S + lowerBoundS*ones(domainf.nNodes, 1);
+    theta_cf.Sinv = sparse(1:domainf.nNodes, 1:domainf.nNodes, 1./theta_cf.S);
     
     %% Compute theta_c and sigma if there is a prior on theta_c, sigma
     
@@ -189,7 +189,7 @@ for k = 2:(EM.maxIterations + 1)
     end
     
     
-    mean_S = mean(diag(theta_cf.S)')
+    mean_S = mean(theta_cf.S)
     
     if(mod(k - 1, basisUpdateGap) == 0)
         %this still needs to be generalized for 2d

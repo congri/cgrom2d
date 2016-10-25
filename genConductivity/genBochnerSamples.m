@@ -1,4 +1,4 @@
-function [sampleFun] = genBochnerSamples(lengthScale, sigma_f, nBasisFunctions)
+function [sampleFun] = genBochnerSamples(lengthScale, sigma_f2, nBasisFunctions)
 %Generate approximate Gaussian process sample functions in analytical form using Bochner's theorem
 
 %Stacked samples from W, see reference_notes
@@ -11,7 +11,7 @@ b = 2*pi*rand(nBasisFunctions, 1);
 gamma = normrnd(0, 1, 1, nBasisFunctions);
 
 %Handle to sample function
-sampleFun = @(x) sqrt((2*sigma_f^2)/nBasisFunctions)*(gamma*cos(W*x + b));
+sampleFun = @(x) sqrt((2*sigma_f2)/nBasisFunctions)*(gamma*cos(W*x + b));
 
 
 end

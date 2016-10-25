@@ -21,7 +21,7 @@ Tc = Tc(:);
 WTc = W*Tc;
 Tf_i_minus_mu_minus_WTc = Tf_i_minus_mu - WTc;
 %only for diagonal S!
-log_p = -.5*sum(log(diag(S))) - .5*(Tf_i_minus_mu_minus_WTc)'*(Sinv*(Tf_i_minus_mu_minus_WTc));
+log_p = -.5*sum(log(S)) - .5*(Tf_i_minus_mu_minus_WTc)'*(Sinv*(Tf_i_minus_mu_minus_WTc));
 
 if nargout > 1
     %Gradient of FEM equation system w.r.t. conductivities
@@ -51,7 +51,7 @@ if nargout > 1
             TcFD = TcFD(:);
             
             WTcFD = W*TcFD;
-            log_pFD = -.5*sum(log(diag(S))) - .5*(Tf_i_minus_mu - WTcFD)'*(Sinv*(Tf_i_minus_mu - WTcFD));
+            log_pFD = -.5*sum(log(S)) - .5*(Tf_i_minus_mu - WTcFD)'*(Sinv*(Tf_i_minus_mu - WTcFD));
             FDgrad(e) = conductivity(e)*(log_pFD - log_p)/d;
         end
         relgrad = FDgrad./d_log_p

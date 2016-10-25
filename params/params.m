@@ -1,55 +1,13 @@
 %main parameter file for 2d coarse-graining
 
-%% Temperature field and gradient generating the boundary conditions
-a = [-5 3 -2 0];
-Tb = @(x) a(1) + a(2)*x(1) + a(3)*x(2) + a(4)*x(1)*x(2);
-qb{1} = @(x) -(a(3) + a(4)*x);      %lower bound
-qb{2} = @(y) (a(2) + a(4)*y);       %right bound
-qb{3} = @(x) (a(3) + a(4)*x);       %upper bound
-qb{4} = @(y) -(a(2) + a(4)*y);      %left bound
-
-%% Initialize domain
-nf = 128;
+%% Initialize coarse domain
 nc = 2;
-assert(mod(nf, nc) == 0, 'error: nF not divisible by nC')
 domainc = Domain(nc, nc, 1, 1);
 domainc = setBoundaries(domainc, [2:(4*nc)], Tb, qb);           %ATTENTION: natural nodes have to be set manually
                                                                 %and consistently in domainc and domainf
 domainc = setNodalCoordinates(domainc);
 domainc = setBvec(domainc);
 domainc = setHeatSource(domainc, zeros(domainc.nEl, 1));
-domainf = Domain(nf, nf, 1, 1);
-domainf = setBoundaries(domainf, [2:(4*nf)], Tb, qb);           %ATTENTION: natural nodes have to be set manually
-                                                                %and consistently in domainc and domainf
-domainf = setNodalCoordinates(domainf);
-domainf = setBvec(domainf);
-domainf = setHeatSource(domainf, zeros(domainf.nEl, 1));
-
-%% Finescale data params
-fineData.genData = true;    %generate new dataset?
-fineData.dist = 'correlated_binary';   %uniform, gaussian or binary (dist of log conductivity)
-fineData.nSamples = 1;
-if strcmp(fineData.dist, 'gaussian')
-    fineData.mu = 1.2;      %mean of log of lambda
-    fineData.sigma = .3;    %sigma of log of lambda
-elseif (strcmp(fineData.dist, 'uniform') || strcmp(fineData.dist, 'binary')...
-        || strcmp(fineData.dist, 'predefined_binary') || strcmp(fineData.dist, 'correlated_binary'))
-    %for uniform & binary
-    fineData.lo = 1;    %upper and lower bounds on conductivity lambda
-    fineData.up = 10;
-    contrast = fineData.up/fineData.lo;
-    %for binary
-    if (strcmp(fineData.dist, 'binary') || strcmp(fineData.dist, 'correlated_binary'))
-        fineData.p_lo = 0;
-        if strcmp(fineData.dist, 'correlated_binary')
-            fineData.lx = .1*domainf.lElX;
-            fineData.ly = .1*domainf.lElY;
-            fineData.sigma_f2 = 1; %has this parameter any impact?
-        end
-    end
-else
-    error('unknown fineCond distribution');
-end
 
 %% Some predefined basis functions for linear model p_c
 phi_1 = @(lambda) log(size(lambda, 1)/sum(1./lambda));
@@ -91,8 +49,8 @@ else
     theta_cf.W = (2/domainc.nEq)*rand(domainf.nNodes, domainc.nNodes);
 end
 
-theta_cf.S = 1*sparse(1:domainf.nNodes, 1:domainf.nNodes, ones(1, domainf.nNodes));
-theta_cf.Sinv = inv(theta_cf.S);
+theta_cf.S = 1*ones(domainf.nNodes, 1);
+theta_cf.Sinv = sparse(1:domainf.nNodes, 1:domainf.nNodes, 1./theta_cf.S);
 theta_cf.mu = zeros(domainf.nNodes, 1);
 % theta_c.theta = (1/size(phi, 1))*ones(size(phi, 1), 1);
 theta_c.theta = 3*ones(nBasis, 1);

@@ -16,9 +16,9 @@ if(patchTest)
     qb{4} = @(y) -(a(2) + a(4)*y);
     
     %domain object. Best not change the order of commands!
-    nc = 3;
+    nc = 256;
     domainc = Domain(nc, nc, 1, 1);
-    domainc = setBoundaries(domainc, [1 2 3], Tbfun, qb);
+    domainc = setBoundaries(domainc, (2:(4*nc)), Tbfun, qb);
     domainc = setNodalCoordinates(domainc);
     domainc = setBvec(domainc);
     domainc = setHeatSource(domainc, zeros(domainc.nEl, 1));
@@ -36,8 +36,8 @@ if(patchTest)
         Tcheck(mod(i - 1, nc + 1) + 1, floor((i - 1)/(nc + 1)) + 1) = Tbfun(domainc.nodalCoordinates(1:2, i));
     end
     
-    testTemperatureField = Tcheck'
-    FEMtemperatureField = out.Tff
+    testTemperatureField = Tcheck';
+    FEMtemperatureField = out.Tff;
     %for correct pcolor plot
     testTemperatureFieldPlot = zeros(size(testTemperatureField) + 1);
     testTemperatureFieldPlot(1:(end - 1), 1:(end - 1)) = testTemperatureField;

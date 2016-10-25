@@ -41,7 +41,7 @@ classdef EMstats
 %             obj.W = zeros(domainf.nNodes, domainc.nNodes, obj.maxIterations, 'single');
             obj.theta = zeros(nBasis, obj.maxIterations + 1, 'single');
             obj.sigma = zeros(obj.maxIterations + 1, 1, 'single');
-            s{1} = spalloc(domainf.nNodes, domainf.nNodes, domainf.nNodes);
+            s{1} = ones(domainf.nNodes, 1);
             obj.S = repmat(s, obj.maxIterations + 1, 1);
             obj.mu = zeros(domainf.nNodes, obj.maxIterations, 'single');
         end

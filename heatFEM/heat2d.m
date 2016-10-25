@@ -42,6 +42,7 @@ for i = 1:domain.nNodes
         Tff(i) = domain.essentialTemperatures(i);
     end
 end
+
 Tff = Tff';
 Out.Tff = Tff;
 

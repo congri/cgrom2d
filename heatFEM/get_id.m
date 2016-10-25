@@ -10,6 +10,6 @@ init = find(eqs == 1);
 id(1:(init-1),:) = [];
 
 id = id(:,2);
-id = int16(id);
+id = uint32(id);
 end
 

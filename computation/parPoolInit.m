@@ -1,8 +1,7 @@
-function [] = parPoolInit(nDataSamples)
+function [] = parPoolInit()
 %% Initializes parallel pool
 
-nLocalCores = 16;   %number of cores on local machine
-N_Threads = min(nLocalCores, nDataSamples);
+N_Threads = 16;
 if isempty(gcp('nocreate'))
     % Create with N_Threads workers
     parpool('local', N_Threads);
