@@ -1,8 +1,16 @@
-function [PhiArray] = designMatrix(phi, domainf, domainc)
+function [PhiArray] = designMatrix(phi, domainf, domainc, condpath, mode)
 %Construct design matrix Phi from basis functions phi and input conductivity data x.
 
 %load fineCond from disc
-load('./data/fineData/fineData', 'cond');
+if strcmp(mode, 'train')
+    load(condpath, 'cond');
+elseif strcmp(mode, 'test')
+    load(condpath, 'condTest')
+    cond = condTest;
+    clear condTest;
+else
+    error('Design matrix for testing or for training?')
+end
 
 %vector E gives the coarse element a fine element belongs to
 [E] = get_coarse_el([domainf.nElX, domainf.nElY], [domainc.nElX, domainc.nElY], 1:domainf.nEl);

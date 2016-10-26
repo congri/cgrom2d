@@ -21,6 +21,10 @@ linpathphase2l2 = @(lambda) .5*linealPath(lambda, 2, 'x', 2, fineData, domainc, 
     .5*linealPath(lambda, 2, 'y', 2, fineData, domainc, domainf);
 linpathphase2l3 = @(lambda) .5*linealPath(lambda, 3, 'x', 2, fineData, domainc, domainf) +...
     .5*linealPath(lambda, 3, 'y', 2, fineData, domainc, domainf);
+linpathphase2l6 = @(lambda) .5*linealPath(lambda, 6, 'x', 2, fineData, domainc, domainf) +...
+    .5*linealPath(lambda, 6, 'y', 2, fineData, domainc, domainf);
+linpathphase2l9 = @(lambda) .5*linealPath(lambda, 9, 'x', 2, fineData, domainc, domainf) +...
+    .5*linealPath(lambda, 9, 'y', 2, fineData, domainc, domainf);
 linpathphase1l1 = @(lambda) .5*linealPath(lambda, 1, 'x', 1, fineData, domainc, domainf) +...
     .5*linealPath(lambda, 1, 'y', 1, fineData, domainc, domainf);
 linpathphase2l1 = @(lambda) .5*linealPath(lambda, 1, 'x', 2, fineData, domainc, domainf) +...
@@ -30,14 +34,16 @@ volFrac1 = @(lambda) .5*linealPath(lambda, 0, 'x', 1, fineData, domainc, domainf
 volFrac2 = @(lambda) .5*linealPath(lambda, 0, 'x', 2, fineData, domainc, domainf) +...
     .5*linealPath(lambda, 0, 'y', 2, fineData, domainc, domainf);
 
-phi = {phi_1; volFrac2; linpathphase2l3};
+phi = {phi_3; volFrac2; linpathphase2l3; linpathphase2l6; linpathphase2l9};
 nBasis = numel(phi);
 
-%% Object containing EM optimization params and stats
-EM = EMstats;
-basisUpdateGap = 15;        %After this number of iterations, include new basis function in p_c
-EM = EM.setMaxIterations(1*basisUpdateGap - 1);
-EM = EM.prealloc(fineData, domainf, domainc, nBasis);           %preallocation of data arrays
+%% EM params
+basisFunctionUpdates = 0;
+basisUpdateGap = 50;
+maxIterations = (basisFunctionUpdates + 1)*basisUpdateGap;
+%jobname for saving data
+jobname = datestr(now, 'mmmddHHMMSS');
+mkdir(strcat('./data/', jobname));
 
 %% Start value of model parameters
 Winterp = true;
@@ -51,13 +57,15 @@ end
 
 theta_cf.S = 1*ones(domainf.nNodes, 1);
 theta_cf.Sinv = sparse(1:domainf.nNodes, 1:domainf.nNodes, 1./theta_cf.S);
+%precomputation to save resources
+theta_cf.WTSinv = theta_cf.W'*theta_cf.Sinv;
 theta_cf.mu = zeros(domainf.nNodes, 1);
 % theta_c.theta = (1/size(phi, 1))*ones(size(phi, 1), 1);
 theta_c.theta = 3*ones(nBasis, 1);
 theta_c.sigma = 1;
 
 %what kind of prior for theta_c
-prior_type = 'none';                  %hierarchical_gamma, hierarchical_laplace, laplace, gaussian or none
+prior_type = 'hierarchical_gamma';                  %hierarchical_gamma, hierarchical_laplace, laplace, gaussian or none
 %prior hyperparams; obsolete for no prior
 % prior_hyperparam = 100*eye(size(phi, 1));         %variance of prior gaussian
 % prior_hyperparam = 1;                             %Exponential decay parameter for laplace

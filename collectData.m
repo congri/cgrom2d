@@ -1,27 +1,68 @@
 %Script to collect data in data arrays of EM object
 
 %% MCMC Step width
+MCMCStepWidth = zeros(1, fineData.nSamples);
+filename = strcat('./data/', jobname, '/MCMCstepWidth');
 for i = 1:fineData.nSamples
     if strcmp(MCMC(i).method, 'MALA')
-        EM.MCMCStepWidth(i, k) = MCMC(i).MALA.stepWidth;
+        MCMCStepWidth(i) = MCMC(i).MALA.stepWidth;
     elseif strcmp(MCMC(i).method, 'randomWalk')
         %only valid for isotropic proposals!
-        EM.MCMCStepWidth(i, k) = MCMC(i).randomWalk.proposalCov(1, 1);
+        MCMCStepWidth(i) = MCMC(i).randomWalk.proposalCov(1, 1);
     elseif strcmp(MCMC(i).method, 'nonlocal')
-        %do nothing
+        %do nothing; we don't use this
     else
         error('Unknown sampling method')
     end
 end
+save(filename, 'MCMCStepWidth', '-ascii', '-append')
 
 %% Optimal params
 %W matrix
-EM.W{k} = theta_cf.W;
+saveW = true;
+if saveW
+    filename = strcat('./data/', jobname, '/Wmat');
+    [rowW, colW, valW] = find(theta_cf.W);
+    WArray = [rowW, colW, valW]';
+    onlyFinal = true;
+    if onlyFinal
+        save(filename, 'WArray', '-ascii')
+    else
+        save(filename, 'WArray', '-ascii', '-append')
+    end
+end
+clear rowW colW valW WArray;
 %theta
-EM.theta(:, k) = theta_c.theta;
+filename = strcat('./data/', jobname, '/theta');
+theta = theta_c.theta';
+save(filename, 'theta', '-ascii', '-append');
 %sigma
-EM.sigma(k) = theta_c.sigma;
+filename = strcat('./data/', jobname, '/sigma');
+sigma = theta_c.sigma;
+save(filename, 'sigma', '-ascii', '-append');
 %S
-EM.S{k} = theta_cf.S;
+saveS = true;
+if saveS
+    filename = strcat('./data/', jobname, '/S');
+    S = theta_cf.S';
+    onlyFinal = true;
+    if onlyFinal
+        save(filename, 'S', '-ascii');
+    else
+        save(filename, 'S', '-ascii', '-append');
+    end
+    clear S;
+end
 %mu
-EM.mu(:, k) = theta_cf.mu;
+saveMu = true;
+if saveMu
+    mu = theta_cf.mu';
+    filename = strcat('./data/', jobname, '/mu');
+    onlyFinal = true;
+    if onlyFinal
+        save(filename, 'mu', '-ascii')
+    else
+        save(filename, 'mu', '-ascii', '-append')
+    end
+    clear mu;
+end

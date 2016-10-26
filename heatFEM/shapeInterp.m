@@ -26,21 +26,27 @@ function [W] = shapeInterp(domainc, domainf)
     end
 
 tic
-W = spalloc(domainf.nNodes, domainc.nNodes, 4*domainf.nNodes);
-for n = 1:domainf.nNodes
+R = zeros(4*domainf.nNodes, 1);
+C = zeros(4*domainf.nNodes, 1);
+Nvec = zeros(4*domainf.nNodes, 1);
+is = 1;
+ie = 4;
+%r is the finescale global node number and the row index of W
+for r = 1:domainf.nNodes
     %coordinate of fine node
-    x(1) = domainf.nodalCoordinates(1, n);
-    x(2) = domainf.nodalCoordinates(2, n);
+    x(1) = domainf.nodalCoordinates(1, r);
+    x(2) = domainf.nodalCoordinates(2, r);
     [N, E] = shapeFunctionValues2(x);
-    
-    %row index of W
-    r = n;
+
     %column indices of W, 4 for every local node of E
     c = domainc.globalNodeNumber(E, :);
-    
-    %Assign shape function weights to matrix W
-    W(r, c) = N;
+    R(is:ie) = r;
+    C(is:ie) = c;
+    Nvec(is:ie) = N;
+    is = is + 4;
+    ie = ie + 4;
 end
+W = sparse(R, C, Nvec);
 W_assembly_time = toc
 
 end

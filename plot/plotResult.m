@@ -5,19 +5,23 @@ function [Tf_mean_mat, Tf_std_mat] = plotResult(theta_c, theta_cf, domainc, doma
 tic;
 %load finescale data from last optimization
 load('./data/fineData/testData')
-
+testSample = 1;
+TfTest = TfTest(:, testSample);
+condTest = condTest(testSample, :);
 
 %design Matrix for p_c
-Phi = designMatrix(phi, condTest, domainf, domainc);
+Phi = designMatrix(phi, domainf, domainc, './data/fineData/testData', 'test');
+Phi = Phi(:, :, testSample);
 
 %% Sample from p_c
-nSamples_p_c = 100;
+nSamples_p_c = 50;
 Xsamples = mvnrnd(Phi*theta_c.theta, (theta_c.sigma^2)*eye(domainc.nEl), nSamples_p_c)';
 LambdaSamples = exp(Xsamples);
 
 %% Run coarse model and sample from p_cf
 Tc = zeros(domainc.nNodes, nSamples_p_c);
-Tfinterp = zeros(domainf.nNodes, nSamples_p_c);
+Tf_mean = zeros(domainf.nNodes, 1);
+Tf_sq_mean = zeros(domainf.nNodes, 1);
 for i = 1:nSamples_p_c
     D = zeros(2, 2, domainc.nEl);
     for e = 1:domainc.nEl
@@ -29,14 +33,18 @@ for i = 1:nSamples_p_c
     
     %sample from p_cf
     mu_cf = theta_cf.mu + theta_cf.W*Tc(:, i);
-    Tfinterp(:, i) = mvnrnd(mu_cf', theta_cf.S);
+    %only for diagonal S!!
+    %Sequentially compute mean and <Tf^2> to save memory
+    Tf_temp = normrnd(mu_cf, theta_cf.S);
+    Tf_mean = ((i - 1)/i)*Tf_mean + (1/i)*Tf_temp;
+    Tf_sq_mean = ((i - 1)/i)*Tf_sq_mean + (1/i)*(Tf_temp.^2);
 end
 
 %% Plot
-Tf_mean = mean(Tfinterp, 2);
 Tf_mean_mat = reshape(Tf_mean, domainf.nElX + 1, domainf.nElY + 1);
 Tf_mean_mat = Tf_mean_mat';
-Tf_std = std(Tfinterp');
+Tf_var = Tf_sq_mean - Tf_mean.^2;
+Tf_std = sqrt(Tf_var);
 Tf_std_mat = reshape(Tf_std, domainf.nElX + 1, domainf.nElY + 1);
 Tf_std_mat = Tf_std_mat';
 [Xcoord, Ycoord] = meshgrid(linspace(0, 1, domainf.nElX + 1), linspace(0, 1, domainf.nElY + 1));
@@ -56,7 +64,7 @@ LambdafPlot = zeros(size(Lambdaf) + 1);
 LambdafPlot(1:(end - 1), 1:(end - 1)) = Lambdaf;
 
 %Error measure
-err = sqrt((1./(2*Tf_std'.^2)).*(TfTest - Tf_mean).^2);
+err = sqrt((.5./(Tf_var)).*(TfTest - Tf_mean).^2);
 err_mat = reshape(err, domainf.nElX + 1, domainf.nElY + 1);
 err_mat = err_mat';
 
@@ -75,7 +83,7 @@ axis square
 colormap(cmp)
 colorbar
 hold
-plot([0 1], [.5 .5], 'w', 'linewidth', 3)
+plot([0 1], [.5 .5], 'w', 'linewidth', 2)
 % caxis([cmin, cmax])
 
 subplot(3,2,1)
@@ -87,7 +95,7 @@ axis square
 colormap(cmp)
 colorbar
 hold
-plot([0 1], [.5 .5], 'w', 'linewidth', 3)
+plot([0 1], [.5 .5], 'w', 'linewidth', 2)
 % caxis([cmin, cmax])
 
 subplot(3,2,3)
@@ -111,7 +119,7 @@ colormap(cmp)
 colorbar
 
 subplot(3,2,5)
-pcolor(LambdafX, LambdafY, LambdafPlot)
+pc = pcolor(LambdafX, LambdafY, LambdafPlot);
 title('True conductivity')
 xlabel('x')
 ylabel('y')
@@ -120,6 +128,7 @@ colormap(cmp)
 colorbar
 caxis([min(min(LambdafPlot(1:(end - 1), 1:(end - 1)))), max(max(LambdafPlot(1:(end - 1), 1:(end - 1))))])
 axis square
+pc.LineStyle = 'none';
 
 % subplot(3,2,6)
 % surf(Xcoord, Ycoord, Tf_mean_mat)

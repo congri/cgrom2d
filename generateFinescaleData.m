@@ -15,7 +15,7 @@ qb{3} = @(x) (a(3) + a(4)*x);       %upper bound
 qb{4} = @(y) -(a(2) + a(4)*y);      %left bound
 
 %% Generate finescale domain
-nf = 128;       %Should be 2^n
+nf = 512;       %Should be 2^n
 disp('Generate domain...')
 domainf = Domain(nf, nf, 1, 1);
 domainf = setBoundaries(domainf, 2:(4*nf), Tb, qb);           %ATTENTION: natural nodes have to be set manually
@@ -29,7 +29,8 @@ t = toc
 disp('Setting up finescale data parameters...')
 fineData.genData = true;    %generate new dataset?
 fineData.dist = 'correlated_binary';   %uniform, gaussian or binary (dist of log conductivity)
-fineData.nSamples = 3;
+fineData.nSamples = 15;
+fineData.nTest = 1;
 if strcmp(fineData.dist, 'gaussian')
     fineData.mu = 1.2;      %mean of log of lambda
     fineData.sigma = .3;    %sigma of log of lambda

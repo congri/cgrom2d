@@ -18,7 +18,7 @@ rng('shuffle')  %system time seed
 parPoolInit();
 
 %% Generate or load finescale dataset
-genData = true;    %load data from disc if false
+genData = false;    %load data from disc if false
 if genData
     generateFinescaleData;
     %load params
@@ -28,7 +28,7 @@ if genData
     %Load params
     params;
     % Compute and store design matrix for each data point
-    PhiArray = designMatrix(phi, domainf, domainc);
+    PhiArray = designMatrix(phi, domainf, domainc, './data/fineData/fineData', 'train');
     % Compute inverse of sum_i Phi^T(x_i)^Phi(x_i)
     sumPhiSq = zeros(size(phi, 1), size(phi, 1));
     for i = 1:fineData.nSamples
@@ -65,10 +65,10 @@ k = 1;  %EM iteration index
 zOptVec = [];
 collectData;
 
-for k = 2:(EM.maxIterations + 1)
+for k = 2:(maxIterations + 1)
     %% Test run for step sizes
     disp('test sampling...')
-    for i = 1:fineData.nSamples
+    parfor i = 1:fineData.nSamples
         Tf_i_minus_mu = Tf(:, i) - theta_cf.mu;
         log_qi{i} = @(Xi) log_q_i(Xi, Tf_i_minus_mu, theta_cf, theta_c,...
             PhiArray(:, :, i), domainc);
@@ -104,7 +104,7 @@ for k = 2:(EM.maxIterations + 1)
     
     disp('actual sampling...')
     %% Generate samples from every q_i
-    for i = 1:fineData.nSamples
+    parfor i = 1:fineData.nSamples
         Tf_i_minus_mu = Tf(:, i) - theta_cf.mu;
         log_qi{i} = @(Xi) log_q_i(Xi, Tf_i_minus_mu, theta_cf, theta_c,...
             PhiArray(:, :, i), domainc);
@@ -142,12 +142,12 @@ for k = 2:(EM.maxIterations + 1)
         %sample i
         Tc_samples(:, :, i) = reshape(cell2mat(out(i).data), domainc.nNodes, MCMC(i).nSamples);
         %only valid for diagonal S here!
-        p_cf_exponent(:, i) = mean((repmat(Tf(:, i) - theta_cf.mu, 1, MCMC(i).nSamples) - theta_cf.W*Tc_samples(:, :, i)).^2, 2);
+        p_cf_exponent(:, i) = mean((repmat(Tf_i_minus_mu, 1, MCMC(i).nSamples) - theta_cf.W*Tc_samples(:, :, i)).^2, 2);
         
         if(~Winterp)
             %still has to be generalized for 2d
             %First factor for matrix W
-            Wa(:, :, i) = (Tf(:, i) - theta_cf.mu)*mean(Tc_samples(:, :, i), 2)';
+            Wa(:, :, i) = (Tf_i_minus_mu)*mean(Tc_samples(:, :, i), 2)';
         end
     end
     
@@ -164,7 +164,9 @@ for k = 2:(EM.maxIterations + 1)
     lowerBoundS = 1e-6;
     theta_cf.S = (1 - mix_S)*mean(p_cf_exponent, 2)...
         + mix_S*theta_cf.S + lowerBoundS*ones(domainf.nNodes, 1);
+    clear p_cf_exponent;
     theta_cf.Sinv = sparse(1:domainf.nNodes, 1:domainf.nNodes, 1./theta_cf.S);
+    theta_cf.WTSinv = theta_cf.W'*theta_cf.Sinv;
     
     %% Compute theta_c and sigma if there is a prior on theta_c, sigma
     
@@ -205,20 +207,16 @@ for k = 2:(EM.maxIterations + 1)
 %             phi{end + 1, 1} = @(x) (1/zOpt)*log((1/FperC)*sum(x.^zOpt));
 %         end
 %         theta_c.theta(end + 1, 1) = thetaTildeOpt;
-%         EM.theta = [EM.theta; zeros(1, size(EM.theta, 2))];
         
         if size(phi, 1) == 1
             phi{2, 1} = phi_2;
             theta_c.theta = [theta_c.theta; 0];
-            EM.theta = [EM.theta; zeros(1, size(EM.theta, 2))];
         elseif size(phi, 1) == 2
             phi{3, 1} = phi_1;
             theta_c.theta = [theta_c.theta; 0];
-            EM.theta = [EM.theta; zeros(1, size(EM.theta, 2))];
         elseif size(phi, 1) == 3
             phi{4, 1} = phi_4;
             theta_c.theta = [theta_c.theta; 0];
-            EM.theta = [EM.theta; zeros(1, size(EM.theta, 2))];
         else
             error('Which basis function to add?')
         end
@@ -238,30 +236,28 @@ for k = 2:(EM.maxIterations + 1)
     collectData;
 end
 clear i j k m Wa Wa_mean Tc_dyadic_mean log_qi p_cf_exponent curr_theta XMean XNormSqMean;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 runtime = toc
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

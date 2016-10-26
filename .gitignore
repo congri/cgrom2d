@@ -14,3 +14,16 @@
 
 # Simulink Code Generation
 slprj/
+
+# Data files
+*.mat
+*.txt
+*.dat
+data/
+
+# Figures
+*.svg
+*.pdf
+*.png
+*.jpg
+*.fig
