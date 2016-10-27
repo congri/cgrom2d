@@ -1,9 +1,13 @@
 %Script to collect data in data arrays of EM object
 
+if ~exist(strcat('./data/', jobname), 'dir')
+    mkdir(strcat('./data/', jobname));
+end
+
 %% MCMC Step width
-MCMCStepWidth = zeros(1, fineData.nSamples);
+MCMCStepWidth = zeros(1, nTrain);
 filename = strcat('./data/', jobname, '/MCMCstepWidth');
-for i = 1:fineData.nSamples
+for i = 1:nTrain
     if strcmp(MCMC(i).method, 'MALA')
         MCMCStepWidth(i) = MCMC(i).MALA.stepWidth;
     elseif strcmp(MCMC(i).method, 'randomWalk')

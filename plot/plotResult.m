@@ -1,17 +1,23 @@
-function [Tf_mean_mat, Tf_std_mat] = plotResult(theta_c, theta_cf, domainc, domainf, phi)
+function [Mahalanobis_score, Tf_mean_mat, Tf_std_mat] = plotResult(theta_c, theta_cf,...
+    domainc, domainf, phi, contrast, nTest)
 %We sample the resulting distribution p(y|x, theta_c, theta_cf) here and compare to the true
 %solution
 
 tic;
-%load finescale data from last optimization
-load('./data/fineData/testData')
+%load test data
+%Folder where finescale data is saved
+fineDataPath = './data/fineData/';
+%Name of test data file
+nf = domainf.nElX;      %To be changed for non-square domains
+testFileName = strcat('test_', 'nf=', num2str(nf), '_contrast=', num2str(contrast), '_samples=',...
+    num2str(nTest));
+Tffile = matfile(strcat(fineDataPath, testFileName));
 testSample = 1;
-TfTest = TfTest(:, testSample);
-condTest = condTest(testSample, :);
+Tf = Tffile.Tf(:, testSample);
+cond = Tffile.cond(testSample, :);
 
 %design Matrix for p_c
-Phi = designMatrix(phi, domainf, domainc, './data/fineData/testData', 'test');
-Phi = Phi(:, :, testSample);
+Phi = designMatrix(phi, domainf, domainc, Tffile, 1);
 
 %% Sample from p_c
 nSamples_p_c = 50;
@@ -49,7 +55,7 @@ Tf_std_mat = reshape(Tf_std, domainf.nElX + 1, domainf.nElY + 1);
 Tf_std_mat = Tf_std_mat';
 [Xcoord, Ycoord] = meshgrid(linspace(0, 1, domainf.nElX + 1), linspace(0, 1, domainf.nElY + 1));
 
-Tf_true_mat = reshape(TfTest, domainf.nElX + 1, domainf.nElY + 1);
+Tf_true_mat = reshape(Tf, domainf.nElX + 1, domainf.nElY + 1);
 Tf_true_mat = Tf_true_mat';
 
 LambdacMean = mean(LambdaSamples, 2)
@@ -58,13 +64,14 @@ LambdacMeanPlot = zeros(size(LambdacMean) + 1);
 LambdacMeanPlot(1:(end - 1), 1:(end - 1)) = LambdacMean;
 [LambdacX, LambdacY] = meshgrid(linspace(0, 1, domainc.nElX + 1), linspace(0, 1, domainc.nElY + 1));
 
-Lambdaf = reshape(condTest, domainf.nElX, domainf.nElY)';
+Lambdaf = reshape(cond, domainf.nElX, domainf.nElY)';
 [LambdafX, LambdafY] = meshgrid(linspace(0, 1, domainf.nElX + 1), linspace(0, 1, domainf.nElY + 1));
 LambdafPlot = zeros(size(Lambdaf) + 1);
 LambdafPlot(1:(end - 1), 1:(end - 1)) = Lambdaf;
 
 %Error measure
-err = sqrt((.5./(Tf_var)).*(TfTest - Tf_mean).^2);
+err = sqrt((.5./(Tf_var)).*(Tf - Tf_mean).^2);
+Mahalanobis_score = mean(err);      %the smaller the better
 err_mat = reshape(err, domainf.nElX + 1, domainf.nElY + 1);
 err_mat = err_mat';
 
@@ -151,7 +158,7 @@ T_pred_cut = Tf_mean_mat(floor(s(1)/2), :);
 pred_std = Tf_std_mat(floor(s(1)/2), :);
 figure
 x = linspace(0, 1, s(2));
-shadedErrorBar(x, T_pred_cut, pred_std);
+shadedErrorBar(x, T_pred_cut, 2*pred_std);
 hold
 plot(x, T_true_cut, 'linewidth', 3)
 axis square

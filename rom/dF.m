@@ -1,4 +1,4 @@
-function [dF_dtheta_c, d2F_dtheta2] = dF(theta, theta_c, prior_type, prior_hyperparam, fineData,...
+function [dF_dtheta_c, d2F_dtheta2] = dF(theta, theta_c, prior_type, prior_hyperparam, nTrain,...
     XNormSqMean, sumPhiTXmean, sumPhiSq, nCoarse)
 %theta, sigma are the dependent variables, theta_c holds the current best estimate from EM
 %Compute gradient and Hessian for posterior lower bound
@@ -12,16 +12,16 @@ else
 end
 
 %Compute sigma^-2 first and plug it into the derivative dF/dtheta
-sigma2 = (1/(nCoarse*fineData.nSamples))*(sum(XNormSqMean) - 2*theta'*sumPhiTXmean...
+sigma2 = (1/(nCoarse*nTrain))*(sum(XNormSqMean) - 2*theta'*sumPhiTXmean...
     + theta'*sumPhiSq*theta);
 sigmaMinus2 = 1/sigma2;
 
 %compute gradients of posterior lower bound
 %dF/dsigma^-2 (prior independent of sigma)
-dF_dtheta_c = (sigmaMinus2/fineData.nSamples)*(sumPhiTXmean - sumPhiSq*theta) + dprior_dthetac;
+dF_dtheta_c = (sigmaMinus2/nTrain)*(sumPhiTXmean - sumPhiSq*theta) + dprior_dthetac;
 
 %compute second derivatives
-d2F_dtheta2 = -(sigmaMinus2/fineData.nSamples)*sumPhiSq + d2prior_d2thetac;
+d2F_dtheta2 = -(sigmaMinus2/nTrain)*sumPhiSq + d2prior_d2thetac;
 
 end
 

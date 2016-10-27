@@ -19,6 +19,7 @@ slprj/
 *.mat
 *.txt
 *.dat
+data/
 
 # Figures
 *.svg

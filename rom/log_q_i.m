@@ -1,13 +1,15 @@
 function [log_q, d_log_q, Tc] = log_q_i(Xi, Tf_i_minus_mu, theta_cf, theta_c, Phi,  domainc)
 
 conductivity = exp(Xi);
-if any(conductivity < 1e-6)
+upperBound = 1e10;
+lowerBound = 1e-10;
+if any(conductivity < lowerBound)
     %lower bound on conductivity for stability
-    conductivity(conductivity < 1e-6) = 1e-6;
+    conductivity(conductivity < lowerBound) = lowerBound;
 end
-if any(conductivity > 1e6)
+if any(conductivity > upperBound)
     %upper bound on conductivity for stability
-    conductivity(conductivity > 1e6) = 1e6;
+    conductivity(conductivity > upperBound) = upperBound;
 end
 
 [lg_p_c, d_lg_p_c] = log_p_c(Xi, Phi, theta_c.theta, theta_c.sigma);

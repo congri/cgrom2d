@@ -14,61 +14,37 @@ addpath('./genConductivity')
 
 rng('shuffle')  %system time seed
 
-%% Open parallel pool
+%Open parallel pool
 parPoolInit();
 
-%% Generate or load finescale dataset
-genData = false;    %load data from disc if false
-if genData
-    generateFinescaleData;
-    %load params
-    load('./data/fineData/fineDataParams');
-    %load finescale temperatures
-    load('./data/fineData/fineData', 'Tf');
-    %Load params
-    params;
-    % Compute and store design matrix for each data point
-    PhiArray = designMatrix(phi, domainf, domainc, './data/fineData/fineData', 'train');
-    % Compute inverse of sum_i Phi^T(x_i)^Phi(x_i)
-    sumPhiSq = zeros(size(phi, 1), size(phi, 1));
-    for i = 1:fineData.nSamples
-        sumPhiSq = sumPhiSq + PhiArray(:,:,i)'*PhiArray(:,:,i);
-    end
-    %shrink finescale domain object to save memory
-    domainf = domainf.shrink();
-    save('./data/fineData/designMatrix', 'PhiArray', 'sumPhiSq');
-else
-    %load params
-    load('./data/fineData/fineDataParams');
-    %load finescale temperatures
-    load('./data/fineData/fineData', 'Tf');
-    %load design matrix
-    load('./data/fineData/designMatrix');
-    %Load params
-    params;
-    %shrink finescale domain object to save memory
-    domainf = domainf.shrink();
-end
+%Load training data
+loadTrainingData;
+%Get model and training parameters
+params;
+Tf = Tffile.Tf(:, 1:nTrain);        %Finescale temperatures - load partially to save memory
 
-
-for i = 1:fineData.nSamples
-    %take MCMC initializations at mode of p_c
-    MCMC(i).Xi_start = PhiArray(:, :, i)*theta_c.theta;
+% Compute design matrix for each data point
+PhiArray = designMatrix(phi, domainf, domainc, Tffile, nTrain);
+% Compute sum_i Phi^T(x_i)^Phi(x_i)
+sumPhiSq = zeros(numel(phi), numel(phi));
+for i = 1:nTrain
+    sumPhiSq = sumPhiSq + PhiArray(:,:,i)'*PhiArray(:,:,i);
 end
+%shrink finescale domain object to save memory
+domainf = domainf.shrink();
 
 %% EM optimization - main body
-%store handle to every q_i in a cell array lq
-log_qi = cell(fineData.nSamples, 1);
-
-%collect data in data arrays
-k = 1;  %EM iteration index
-zOptVec = [];
-collectData;
+k = 1;          %EM iteration index
+collectData;    %Write initial parametrizations to disk
 
 for k = 2:(maxIterations + 1)
+    for i = 1:nTrain
+        %take MCMC initializations at mode of p_c
+        MCMC(i).Xi_start = PhiArray(:, :, i)*theta_c.theta;
+    end
     %% Test run for step sizes
     disp('test sampling...')
-    parfor i = 1:fineData.nSamples
+    parfor i = 1:nTrain
         Tf_i_minus_mu = Tf(:, i) - theta_cf.mu;
         log_qi{i} = @(Xi) log_q_i(Xi, Tf_i_minus_mu, theta_cf, theta_c,...
             PhiArray(:, :, i), domainc);
@@ -102,9 +78,16 @@ for k = 2:(maxIterations + 1)
         MCMC(i).Xi_start = MCMCstepWidth(i).Xi_start;
     end
     
+    for i = 1:nTrain
+        if(k - 1 <= length(nSamplesBeginning))
+            %less samples at the beginning
+            MCMC(i).nSamples = nSamplesBeginning(k - 1);
+        end
+    end
+    
     disp('actual sampling...')
     %% Generate samples from every q_i
-    parfor i = 1:fineData.nSamples
+    parfor i = 1:nTrain
         Tf_i_minus_mu = Tf(:, i) - theta_cf.mu;
         log_qi{i} = @(Xi) log_q_i(Xi, Tf_i_minus_mu, theta_cf, theta_c,...
             PhiArray(:, :, i), domainc);
@@ -144,97 +127,41 @@ for k = 2:(maxIterations + 1)
         %only valid for diagonal S here!
         p_cf_exponent(:, i) = mean((repmat(Tf_i_minus_mu, 1, MCMC(i).nSamples) - theta_cf.W*Tc_samples(:, :, i)).^2, 2);
         
-        if(~Winterp)
-            %still has to be generalized for 2d
-            %First factor for matrix W
-            Wa(:, :, i) = (Tf_i_minus_mu)*mean(Tc_samples(:, :, i), 2)';
-        end
     end
+    clear Tc_samples;
     
-    %% Compute params of p_cf
-    if(~Winterp)
-        %this still has to be generalized to 2d; also, W is not sparse anymore
-        Tc_dyadic_mean = TcDyadicMean(Tc_samples, fineData.nSamples, MCMC);
-        Wa_mean = mean(Wa, 3);
-        theta_cf.W = compW(Tc_dyadic_mean,  Wa_mean,...
-            theta_cf.Sinv, theta_cf.W, paramIndices, constIndices);
-    end
-    
-    %decelerate convergence of S
+    %% M-step: determine optimal parameters given the sample set
+    disp('M-step: find optimal params')
+    %Optimal S (decelerated convergence)
     lowerBoundS = 1e-6;
     theta_cf.S = (1 - mix_S)*mean(p_cf_exponent, 2)...
         + mix_S*theta_cf.S + lowerBoundS*ones(domainf.nNodes, 1);
     clear p_cf_exponent;
     theta_cf.Sinv = sparse(1:domainf.nNodes, 1:domainf.nNodes, 1./theta_cf.S);
-    theta_cf.WTSinv = theta_cf.W'*theta_cf.Sinv;
-    
-    %% Compute theta_c and sigma if there is a prior on theta_c, sigma
-    
+    theta_cf.WTSinv = theta_cf.W'*theta_cf.Sinv;        %Precomputation for efficiency
+
+    %optimal theta_c and sigma
     %sum_i Phi_i^T <X^i>_qi
-    sumPhiTXmean = zeros(size(phi, 1), 1);
-    for i = 1:fineData.nSamples
+    sumPhiTXmean = zeros(numel(phi), 1);
+    for i = 1:nTrain
         sumPhiTXmean = sumPhiTXmean + PhiArray(:,:,i)'*XMean(:,i);
     end
 
-    disp('M-step: find optimal params')
-    [theta_c] = optTheta_c(theta_c, fineData, domainc.nEl, XNormSqMean,...
+    [theta_c] = optTheta_c(theta_c, nTrain, domainc.nEl, XNormSqMean,...
         sumPhiTXmean, sumPhiSq, prior_type, prior_hyperparam);
-    disp('M-step done, current theta:')
-        
+    disp('M-step done, current params:')
     curr_theta = theta_c.theta
     curr_sigma = theta_c.sigma
-    
-    %Start next chain at mean of p_c
-    for i = 1:fineData.nSamples
-        MCMC(i).Xi_start = PhiArray(:,:,i)*theta_c.theta;
-        % MCMC(i).Xi_start = out(i).samples(:, end);
-    end
-    
-    
     mean_S = mean(theta_cf.S)
     
     if(mod(k - 1, basisUpdateGap) == 0)
-        %this still needs to be generalized for 2d
-        disp('Updating basis functions phi in p_c...')
-
-%         [thetaTildeOpt, zOpt] = optNewPhi(XMean, x, theta_c.theta, PhiArray, nFine, nCoarse);
-%         zOptVec = [zOptVec zOpt]
-%         if zOpt >= 30
-%             phi{end + 1, 1} = @(x) log(max(x));
-%         elseif zOpt <= -30
-%             phi{end + 1, 1} = @(x) log(min(x));
-%         else
-%             phi{end + 1, 1} = @(x) (1/zOpt)*log((1/FperC)*sum(x.^zOpt));
-%         end
-%         theta_c.theta(end + 1, 1) = thetaTildeOpt;
-        
-        if size(phi, 1) == 1
-            phi{2, 1} = phi_2;
-            theta_c.theta = [theta_c.theta; 0];
-        elseif size(phi, 1) == 2
-            phi{3, 1} = phi_1;
-            theta_c.theta = [theta_c.theta; 0];
-        elseif size(phi, 1) == 3
-            phi{4, 1} = phi_4;
-            theta_c.theta = [theta_c.theta; 0];
-        else
-            error('Which basis function to add?')
-        end
-        
-        % Compute and store design matrix for each data point
-        PhiArray = zeros(domainc.nEl, size(phi, 1), fineData.nSamples);
-        for i = 1:size(cond, 2)
-            PhiArray(:,:,i) = designMatrix(phi, cond, domainf, domainc);
-        end
-        % Compute inverse of sum_i Phi^T(x_i)^Phi(x_i)
-        sumPhiSq = zeros(size(phi, 1), size(phi, 1));
-        for i = 1:fineData.nSamples
-            sumPhiSq = sumPhiSq + PhiArray(:,:,i)'*PhiArray(:,:,i);
-        end
+        %this still needs to be generalized for 2d!
+        [phi, PhiArray, sumPhiSq] = updateBasisFunction(XMean, x, theta, PhiArray, nFine, nCoarse, phi);
     end
-    % collect data in data arrays
+    %collect data and write it to disk periodically to save memory
     collectData;
 end
+%tidy up
 clear i j k m Wa Wa_mean Tc_dyadic_mean log_qi p_cf_exponent curr_theta XMean XNormSqMean;
 runtime = toc
 

@@ -77,6 +77,8 @@ classdef Domain
             %local coordinate array. First index is element number, 2 is local node, 3 is x or y
             domainObj.lc = get_loc_coord(domainObj);
             domainObj.globalNodeNumber = get_glob(domainObj);
+            
+            domainObj = setHeatSource(domainObj, zeros(domainObj.nEl, 1));  %zero as default
 
         end
         
@@ -213,6 +215,8 @@ classdef Domain
             
             %Finally set local forces due to natural boundaries
             domainObj.fh = get_flux_force(domainObj, qb);
+            domainObj = setNodalCoordinates(domainObj);
+            domainObj = setBvec(domainObj);
         end
         
         function domainObj = shrink(domainObj)

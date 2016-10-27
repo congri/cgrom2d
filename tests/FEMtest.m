@@ -16,12 +16,12 @@ if(patchTest)
     qb{4} = @(y) -(a(2) + a(4)*y);
     
     %domain object. Best not change the order of commands!
-    nc = 256;
+    nc = 64;
     domainc = Domain(nc, nc, 1, 1);
     domainc = setBoundaries(domainc, (2:(4*nc)), Tbfun, qb);
-    domainc = setNodalCoordinates(domainc);
-    domainc = setBvec(domainc);
-    domainc = setHeatSource(domainc, zeros(domainc.nEl, 1));
+%     domainc = setNodalCoordinates(domainc);
+%     domainc = setBvec(domainc);
+%     domainc = setHeatSource(domainc, zeros(domainc.nEl, 1));
     
     %heat conductivity tensor for each element
     Dc = zeros(2, 2, domainc.nEl);
