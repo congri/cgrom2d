@@ -12,7 +12,7 @@ addpath('./computation')
 boundaryConditions;
 
 %% Generate finescale domain
-nf = 512;       %Should be 2^n
+nf = 128;       %Should be 2^n
 disp('Generate domain object...')
 domainf = Domain(nf, nf, 1, 1);
 domainf = setBoundaries(domainf, [2:(4*nf)], Tb, qb);
@@ -23,8 +23,8 @@ toc
 disp('Setting up finescale data parameters...')
 fineData.genData = true;    %generate new dataset?
 fineData.dist = 'correlated_binary';   %uniform, gaussian or binary (dist of log conductivity)
-fineData.nSamples = 200;
-fineData.nTest = 56;
+fineData.nSamples = 15;
+fineData.nTest = 1;
 if strcmp(fineData.dist, 'gaussian')
     fineData.mu = 1.2;      %mean of log of lambda
     fineData.sigma = .3;    %sigma of log of lambda
@@ -71,7 +71,7 @@ testFileName = strcat('test_', 'nf=', num2str(nf), '_contrast=', num2str(contras
 %Name of parameter file
 paramFileName = strcat('param_', 'nf=', num2str(nf), '_contrast=', num2str(contrast));
 %Folder where finescale data is saved
-fineDataPath = './data/fineData/';
+fineDataPath = '/home/constantin/matlab/data/fineData/';
 
 disp('Finescale data generated. Saving and quitting...')
 %Directly save to disc and load where needed. This saves memory.

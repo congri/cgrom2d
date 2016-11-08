@@ -2,10 +2,10 @@
 
 %Which data to load? We will get error if data doesn't exist
 nf = 512;
-contrast = 2;
-nSamples = 255;
+contrast = 100;
+nSamples = 200;
 %Folder where finescale data is saved
-fineDataPath = './data/fineData/';
+fineDataPath = strcat('/home/constantin/matlab/data/fineData/');
 %Name of training data file
 trainFileName = strcat('train_', 'nf=', num2str(nf), '_contrast=', num2str(contrast), '_samples=',...
     num2str(nSamples));

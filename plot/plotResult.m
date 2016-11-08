@@ -17,7 +17,7 @@ Tf = Tffile.Tf(:, testSample);
 cond = Tffile.cond(testSample, :);
 
 %design Matrix for p_c
-Phi = designMatrix(phi, domainf, domainc, Tffile, 1);
+Phi = designMatrix(phi, domainf, domainc, Tffile, testSample, testSample);
 
 %% Sample from p_c
 nSamples_p_c = 50;

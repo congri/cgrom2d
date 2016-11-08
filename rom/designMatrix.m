@@ -1,10 +1,10 @@
-function [PhiArray] = designMatrix(phi, domainf, domainc, Tffile, nTrain)
+function [PhiArray] = designMatrix(phi, domainf, domainc, Tffile, nTrain_lo, nTrain_up)
 %Construct design matrix Phi from basis functions phi and input conductivity data x.
 
 tic
 disp('Compute design matrices Phi...')
 %load fineCond from disc
-cond = Tffile.cond(1:nTrain, :);        %Finescale conductivities - load partially to save memory
+cond = Tffile.cond(nTrain_lo:nTrain_up, :);        %Finescale conductivities - load partially to save memory
 
 %vector E gives the coarse element a fine element belongs to
 [E] = get_coarse_el([domainf.nElX, domainf.nElY], [domainc.nElX, domainc.nElY], 1:domainf.nEl);

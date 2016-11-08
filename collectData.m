@@ -1,12 +1,12 @@
 %Script to collect data in data arrays of EM object
 
-if ~exist(strcat('./data/', jobname), 'dir')
-    mkdir(strcat('./data/', jobname));
+if ~exist('./data/', 'dir')
+    mkdir('./data/');
 end
 
 %% MCMC Step width
 MCMCStepWidth = zeros(1, nTrain);
-filename = strcat('./data/', jobname, '/MCMCstepWidth');
+filename = './data/MCMCstepWidth';
 for i = 1:nTrain
     if strcmp(MCMC(i).method, 'MALA')
         MCMCStepWidth(i) = MCMC(i).MALA.stepWidth;
@@ -25,7 +25,7 @@ save(filename, 'MCMCStepWidth', '-ascii', '-append')
 %W matrix
 saveW = true;
 if saveW
-    filename = strcat('./data/', jobname, '/Wmat');
+    filename = './data/Wmat';
     [rowW, colW, valW] = find(theta_cf.W);
     WArray = [rowW, colW, valW]';
     onlyFinal = true;
@@ -37,17 +37,17 @@ if saveW
 end
 clear rowW colW valW WArray;
 %theta
-filename = strcat('./data/', jobname, '/theta');
+filename = './data/theta';
 theta = theta_c.theta';
 save(filename, 'theta', '-ascii', '-append');
 %sigma
-filename = strcat('./data/', jobname, '/sigma');
+filename = './data/sigma';
 sigma = theta_c.sigma;
 save(filename, 'sigma', '-ascii', '-append');
 %S
 saveS = true;
 if saveS
-    filename = strcat('./data/', jobname, '/S');
+    filename = './data/S';
     S = theta_cf.S';
     onlyFinal = true;
     if onlyFinal
@@ -61,7 +61,7 @@ end
 saveMu = true;
 if saveMu
     mu = theta_cf.mu';
-    filename = strcat('./data/', jobname, '/mu');
+    filename = './data/mu';
     onlyFinal = true;
     if onlyFinal
         save(filename, 'mu', '-ascii')

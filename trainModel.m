@@ -14,17 +14,18 @@ addpath('./genConductivity')
 
 rng('shuffle')  %system time seed
 
-%Open parallel pool
-parPoolInit();
-
-%Load training data
+%% Load training data
 loadTrainingData;
 %Get model and training parameters
 params;
+
+%Open parallel pool
+parPoolInit(nTrain);
+
 Tf = Tffile.Tf(:, 1:nTrain);        %Finescale temperatures - load partially to save memory
 
 % Compute design matrix for each data point
-PhiArray = designMatrix(phi, domainf, domainc, Tffile, nTrain);
+PhiArray = designMatrix(phi, domainf, domainc, Tffile, 1, nTrain);
 % Compute sum_i Phi^T(x_i)^Phi(x_i)
 sumPhiSq = zeros(numel(phi), numel(phi));
 for i = 1:nTrain
