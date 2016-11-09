@@ -1,4 +1,3 @@
-
 function [] = parPoolInit(N_Threads)
 %% Initializes parallel pool
 

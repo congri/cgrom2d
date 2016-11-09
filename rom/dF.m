@@ -18,6 +18,8 @@ sigmaMinus2 = 1/sigma2;
 
 %compute gradients of posterior lower bound
 %dF/dsigma^-2 (prior independent of sigma)
+dL = (sigmaMinus2/nTrain)*(sumPhiTXmean - sumPhiSq*theta)
+dprior_dthetac
 dF_dtheta_c = (sigmaMinus2/nTrain)*(sumPhiTXmean - sumPhiSq*theta) + dprior_dthetac;
 
 %compute second derivatives

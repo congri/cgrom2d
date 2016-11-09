@@ -26,7 +26,7 @@ theta_cf.Sinv = sparse(1:domainf.nNodes, 1:domainf.nNodes, 1./theta_cf.S);
 theta_cf.WTSinv = theta_cf.W'*theta_cf.Sinv;
 theta_cf.mu = zeros(domainf.nNodes, 1);
 % theta_c.theta = (1/size(phi, 1))*ones(size(phi, 1), 1);
-theta_c.theta = 5*ones(nBasis, 1);
+theta_c.theta = rand(nBasis, 1) - .5;
 theta_c.sigma = 1;
 
 
@@ -42,8 +42,8 @@ prior_hyperparam = [0; 1e-1];                        %parameters a, b of gamma h
 MCMC.method = 'MALA';                                %proposal type: randomWalk, nonlocal or MALA
 MCMC.seed = 10;
 MCMC.nThermalization = 0;                            %thermalization steps
-nSamplesBeginning = [30];
-MCMC.nSamples = 30;                                 %number of samples
+nSamplesBeginning = [200];
+MCMC.nSamples = 200;                                 %number of samples
 MCMC.nGap = 200;                                     %decorrelation gap
 MCMC.Xi_start = 20*ones(domainc.nEl, 1);
 %only for random walk

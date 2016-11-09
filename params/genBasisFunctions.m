@@ -6,9 +6,11 @@ dLinPathMax = 21;
 dLinPathMin = 0;
 dLinPathIncr = 1;
 i = 1;
+nElc = [domainc.nElX domainc.nElY];
+nElf = [domainf.nElX domainf.nElY];
 for d = dLinPathMin:dLinPathIncr:dLinPathMax
-    linPath{i} = @(lambda) .5*linealPath(lambda, d, 'x', 2, fineData, domainc, domainf) +...
-    .5*linealPath(lambda, d, 'y', 2, fineData, domainc, domainf);
+    linPath{i} = @(lambda) .5*linealPath(lambda, d, 'x', 2, fineData, nElc, nElf) +...
+    .5*linealPath(lambda, d, 'y', 2, fineData, nElc, nElf);
     i = i + 1;
 end
 
@@ -17,8 +19,8 @@ d2pointCorrMin = 2;
 d2pointCorrIncr = 1;
 i = 1;
 for d = d2pointCorrMin:d2pointCorrIncr:d2pointCorrMax
-    twoPointCorr{i} = @(lambda) .5*twoPointCorrelation(lambda, d, 'x', 2, fineData, domainc, domainf) +...
-    .5*twoPointCorrelation(lambda, d, 'y', 2, fineData, domainc, domainf);
+    twoPointCorr{i} = @(lambda) .5*twoPointCorrelation(lambda, d, 'x', 2, fineData, nElc, nElf) +...
+    .5*twoPointCorrelation(lambda, d, 'y', 2, fineData, nElc, nElf);
     i = i + 1;
 end
 
