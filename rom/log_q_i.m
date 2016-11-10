@@ -1,5 +1,10 @@
 function [log_q, d_log_q, Tc] = log_q_i(Xi, Tf_i_minus_mu, theta_cf, theta_c, Phi,  domainc)
 
+%Xi must be a column vector
+if size(Xi, 2) > 1
+    Xi = Xi';
+end
+
 conductivity = exp(Xi);
 upperBound = 1e10;
 lowerBound = 1e-10;

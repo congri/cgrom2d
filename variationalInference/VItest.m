@@ -5,10 +5,11 @@ clear all
 dim = 4;        %ATTENTION: set params accordingly
 params.family = 'diagonalGaussian';
 params.initialParams{1} = zeros(1, dim);
-params.nSamples = 100;
+params.nSamples = 1000;
 params.robbinsMonro.stepWidth = 1;
 params.robbinsMonro.offset = 10;
 params.robbinsMonro.relXtol = 1e-8;
+params.robbinsMonro.adaGradSteps = 400;
 
 
 if strcmp(params.family, 'isotropicGaussian')
@@ -21,11 +22,20 @@ if strcmp(params.family, 'isotropicGaussian')
 elseif strcmp(params.family, 'diagonalGaussian')
     %Take a diagonal Gaussian as the true distribution
     params.initialParams{2} = ones(1, dim);
-    trueMu = [1 2 3 4];
+    trueMu = [1 2 10 4];
     trueCovarDiag = [16 4 9 1];
     dim = length(trueMu);
     trueCovarInvDiagMat = sparse(1:dim, 1:dim, 1./trueCovarDiag);
     logTrueCondDist = @(x) -.5*dim*log(2*pi) - .5*sum(log(trueCovarDiag)) - .5*(x - trueMu)*trueCovarInvDiagMat*(x - trueMu)';
+elseif strcmp(params.family, 'fullRankGaussian')
+    %Take a diagonal Gaussian as the true distribution
+    params.initialParams{2} = 100*eye(2);
+    trueMu = [1 2];
+    trueCovarDiag = [16 4];
+    dim = length(trueMu);
+    trueCovarInvDiagMat = sparse(1:dim, 1:dim, 1./trueCovarDiag);
+    logTrueCondDist = @(x) -.5*dim*log(2*pi) - .5*sum(log(trueCovarDiag)) - .5*(x - trueMu)*trueCovarInvDiagMat*(x - trueMu)';
+
 end
 
-[optVarDist] = varInf(logTrueCondDist, params)
+[optVarDist, RMsteps] = varInf(logTrueCondDist, params)

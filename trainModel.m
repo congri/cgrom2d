@@ -11,6 +11,7 @@ addpath('./FEMgradient')
 addpath('./MCMCsampler')
 addpath('./optimization')
 addpath('./genConductivity')
+addpath('./variationalInference')
 
 rng('shuffle')  %system time seed
 

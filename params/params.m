@@ -42,9 +42,9 @@ prior_hyperparam = [0; 1e-1];                        %parameters a, b of gamma h
 MCMC.method = 'MALA';                                %proposal type: randomWalk, nonlocal or MALA
 MCMC.seed = 10;
 MCMC.nThermalization = 0;                            %thermalization steps
-nSamplesBeginning = [200];
-MCMC.nSamples = 200;                                 %number of samples
-MCMC.nGap = 200;                                     %decorrelation gap
+nSamplesBeginning = [50];
+MCMC.nSamples = 50;                                 %number of samples
+MCMC.nGap = 100;                                     %decorrelation gap
 MCMC.Xi_start = 20*ones(domainc.nEl, 1);
 %only for random walk
 MCMC.MALA.stepWidth = .005;
@@ -64,6 +64,17 @@ mix_sigma = 0;
 mix_S = 0.5;
 mix_W = 0;
 mix_theta = 0;
+
+%% Variational inference params
+dim = 4;        %ATTENTION: set params accordingly
+VIparams.family = 'diagonalGaussian';
+VIparams.initialParams{1} = zeros(1, dim);
+VIparams.initialParams{2} = ones(1, dim);
+VIparams.nSamples = 500;
+VIparams.robbinsMonro.stepWidth = 5;
+VIparams.robbinsMonro.offset = 10;
+VIparams.robbinsMonro.relXtol = 1e-6;
+VIparams.robbinsMonro.adaGradSteps = 400;   %only works for diagonal Gaussian
 
 
 
