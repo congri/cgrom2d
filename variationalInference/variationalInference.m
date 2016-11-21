@@ -24,16 +24,16 @@ if strcmp(params.family, 'isotropicGaussian')
     while ~converged
         varMean = repmat(variationalGaussMean, params.nSamples, 1);
         %Draw samples from variational distribution
-        varSamples = normrnd(varMean, varVariance); %1 sample = 1 row
+        samples = normrnd(varMean, varVariance); %1 sample = 1 row
         
         %Gradient of variational distribution w.r.t. params
-        samplesMinusMu = (varSamples - varMean);
+        samplesMinusMu = (samples - varMean);
         samplesMinusMuNormSq = sum(samplesMinusMu.^2, 2);
         d_muSamples = (1/varVariance)*samplesMinusMu;
         d_sigmaMinus2Samples = .5*dim*varVariance - .5*samplesMinusMuNormSq;
         
         for i = 1:params.nSamples
-            rightFactor = logTrueCondDist(varSamples(i, :)) + .5*dim*log(2*pi) +...
+            rightFactor = logTrueCondDist(samples(i, :)) + .5*dim*log(2*pi) +...
                .5*dim*log(varVariance) + .5*(1/varVariance)*samplesMinusMuNormSq(i, :);
             RMsamples_mu(i, :) = d_muSamples(i, :)*rightFactor;
             %factor 1/varVariance due to log transformation
@@ -71,17 +71,16 @@ elseif strcmp(params.family, 'diagonalGaussian')
     variationalGaussMean = params.initialParams{1};
     dim = length(variationalGaussMean);
     variationalGaussVariance = params.initialParams{2}; %Vector of variances in each dimension
-    negLogVariance = - log(variationalGaussVariance);
+    variationalNegLogVariance = - log(variationalGaussVariance);
+    variationalParameters = [variationalGaussMean variationalNegLogVariance];
     GMean = zeros(1, dim);
     deltaMeanSq = ones(1, dim);
     deltaVarSq = ones(1, dim);
     GVar = zeros(1, dim);
     offset = 1e-3;
     if strcmp(params.RMtype, 'adam')
-       momentumMean = zeros(1, dim);
-       unCenVarMean = momentumMean;
-       momentumVar = zeros(1, dim);
-       unCenVarVar = momentumVar;
+       momentum = zeros(1, 2*dim);
+       uncenteredParameterVariance = zeros(1, 2*dim);
     end
 
     
@@ -90,128 +89,65 @@ elseif strcmp(params.family, 'diagonalGaussian')
     RMsamples_mu = zeros(params.nSamples, dim);
     RMsamples_var = zeros(params.nSamples, dim);
     d_logSigmaMinus2 = RMsamples_var;
-    reparamTrick = true;
     while ~converged
 
-        varMean = repmat(variationalGaussMean, params.nSamples, 1);
-        varCovar_diag = repmat(variationalGaussVariance, params.nSamples, 1);
-        if reparamTrick
-            varSamples = normrnd(zeros(params.nSamples, dim), ones(params.nSamples, dim)); %1 sample = 1 row
-            zSamples = varMean + sqrt(varCovar_diag).*varSamples;
-            meanGrad = zeros(1, dim);
-            varGrad = zeros(1, dim);
-            meanGradSq = zeros(1, dim);
-            varGradSq = zeros(1, dim);
-            for i = 1:params.nSamples
-                [~, trueGrad] = logTrueCondDist(zSamples(i, :));
-                trueGrad = trueGrad';
-                variationGrad = variationalGaussMean - zSamples(i, :);
-                meanGrad = meanGrad + (trueGrad - variationGrad).*ones(1, dim);
-                meanGradSq = meanGradSq + ((trueGrad - variationGrad).*ones(1, dim)).^2;
-                varGrad = varGrad + (trueGrad - variationGrad).*varSamples(i, :);
-                varGradSq = varGradSq + ((trueGrad - variationGrad).*varSamples(i, :)).^2;
-            end
-            meanGrad = meanGrad/params.nSamples;
-            MeanGradErr = sqrt(meanGradSq/params.nSamples - meanGrad.^2);
-            varGrad = -.5*(varGrad.*sqrt(variationalGaussVariance))/params.nSamples;
-            VarGradErr = sqrt(varGradSq/params.nSamples - varGrad.^2);
-
-            
-        else
-            %Draw samples from variational distribution
-            varSamples = normrnd(varMean, sqrt(varCovar_diag)); %1 sample = 1 row
-            %Gradient of variational distribution w.r.t. params
-            samplesMinusMu = (varSamples - varMean);
-            samplesMinusMuSq = samplesMinusMu.^2;
-            d_muSamples = (1./varCovar_diag).*samplesMinusMu;
-            d_sigmaMinus2Samples = .5*varCovar_diag - .5*samplesMinusMuSq;
-            
-            for i = 1:params.nSamples
-                rightFactor = logTrueCondDist(varSamples(i, :)) + .5*dim*log(2*pi) +...
-                    .5*sum(log(variationalGaussVariance)) + .5*sum((1./variationalGaussVariance).*samplesMinusMuSq(i, :));
-                RMsamples_mu(i, :) = d_muSamples(i, :)*rightFactor;
-                d_logSigmaMinus2(i, :) = (1./variationalGaussVariance).*d_sigmaMinus2Samples(i, :);
-                %factor 1/varVariance due to log transformation
-                RMsamples_var(i, :) = d_logSigmaMinus2(i, :)*rightFactor;
-            end
-            
-            meanGrad = mean(RMsamples_mu);
-            varGrad = mean(RMsamples_var);
-            
-            %control variates
-            a_mu = zeros(1, dim);
-            a_var = zeros(1, dim);
-            for i = 1:dim
-                a_mu(i) = (mean(RMsamples_mu(:, i).*d_muSamples(:, i)) - meanGrad(i)*mean(d_muSamples(:, i)))/var(d_muSamples(:, i));
-                a_var(i) = (mean(RMsamples_var(:, i).*d_logSigmaMinus2(:, i)) - varGrad(i)*mean(d_logSigmaMinus2(:, i)))/var(d_logSigmaMinus2(:, i));
-            end
-            for i = 1:dim
-                meanGrad(i) = meanGrad(i) - a_mu(i)*mean(d_muSamples(:, i));
-                varGrad(i) = varGrad(i) - a_var(i)*mean(d_logSigmaMinus2(:, i));
-            end
-        end
+        samples = normrnd(0, 1, params.nSamples, dim); %1 sample = 1 row
+        grad = ELBOgrad(samples, variationalParameters, logTrueCondDist, params)
+        meanGrad = grad(1:dim);
+        varGrad = grad((dim + 1):end);
         
         %Robbins-Monro
-        variationalGaussMean = mean(varMean);
-        oldParams = [variationalGaussMean variationalGaussVariance];
-        
-        
-        
+        oldParams = variationalParameters;
+           
         if strcmp(params.RMtype, 'adaGrad')
             GMean = GMean + meanGrad.^2;    %AdaGrad
             rhoMean = params.robbinsMonro.stepWidth*GMean.^(-.5);
             variationalGaussMean = variationalGaussMean + rhoMean.*meanGrad
             GVar = GVar + varGrad.^2;
             rhoVar = params.robbinsMonro.stepWidth*GVar.^(-.5);
-            negLogVariance = negLogVariance + rhoVar.*varGrad;
-            variationalGaussVariance = 1./(exp(negLogVariance))
+            variationalNegLogVariance = variationalNegLogVariance + rhoVar.*varGrad;
+            variationalGaussVariance = 1./(exp(variationalNegLogVariance))
         elseif strcmp(params.RMtype, 'adaDelta')
             GMean = params.decayParam*GMean + (1 - params.decayParam)*meanGrad.^2;
             GVar = params.decayParam*GVar +(1 - params.decayParam)*varGrad.^2;
             currDeltaMean = sqrt(deltaMeanSq./(GMean + offset)).*meanGrad;
             currDeltaVar = sqrt(deltaVarSq./(GVar + offset)).*varGrad;
             variationalGaussMean = variationalGaussMean + currDeltaMean;
-            negLogVariance = negLogVariance + currDeltaVar;
+            variationalNegLogVariance = variationalNegLogVariance + currDeltaVar;
             deltaMeanSq = params.decayParam*deltaMeanSq + (1 - params.decayParam)*currDeltaMean.^2;
             deltaVarSq = params.decayParam*deltaVarSq + (1 - params.decayParam)*currDeltaVar.^2;
-            variationalGaussVariance = 1./(exp(negLogVariance));
+            variationalGaussVariance = 1./(exp(variationalNegLogVariance));
         elseif strcmp(params.RMtype, 'rmsProp')
             GMean = params.decayParam*GMean + (1 - params.decayParam)*meanGrad.^2;
             GVar = params.decayParam*GVar +(1 - params.decayParam)*varGrad.^2;
             variationalGaussMean = variationalGaussMean + (params.robbinsMonro.stepWidth/(params.robbinsMonro.offset + RMsteps))*(1./sqrt(GMean)).*meanGrad;
-            negLogVariance = negLogVariance + (params.robbinsMonro.stepWidth/(params.robbinsMonro.offset + RMsteps))*(1./sqrt(GVar)).*varGrad;
-            variationalGaussVariance = 1./(exp(negLogVariance));
+            variationalNegLogVariance = variationalNegLogVariance + (params.robbinsMonro.stepWidth/(params.robbinsMonro.offset + RMsteps))*(1./sqrt(GVar)).*varGrad;
+            variationalGaussVariance = 1./(exp(variationalNegLogVariance));
         elseif strcmp(params.RMtype, 'adam')
-            momentumMean = params.adam.beta1*momentumMean + (1 - params.adam.beta1)*meanGrad;
-%             momentumMean = momentumMean/(1 - params.adam.beta1);
-            unCenVarMean = params.adam.beta2*unCenVarMean + (1 - params.adam.beta2)*meanGrad.^2;
-%             unCenVarMean = unCenVarMean/(1 - params.adam.beta2);
-            momentumVar = params.adam.beta1*momentumVar + (1 - params.adam.beta1)*varGrad;
-%             momentumVar = momentumVar/(1 - params.adam.beta1);
-            unCenVarVar = params.adam.beta2*unCenVarVar + (1 - params.adam.beta2)*varGrad.^2;
-%             unCenVarVar = unCenVarVar/(1 - params.adam.beta2);
+            momentum = params.adam.beta1*momentum + (1 - params.adam.beta1)*grad;
+            uncenteredParameterVariance = params.adam.beta2*uncenteredParameterVariance...
+                + (1 - params.adam.beta2)*grad.^2;
             
             %parameter updates
-            variationalGaussMean = variationalGaussMean +...
+            %First half is means, second half is log sigma^-2
+            variationalParameters = variationalParameters +...
                 (params.robbinsMonro.stepWidth*params.robbinsMonro.offset/(params.robbinsMonro.offset + RMsteps))*...
-                (1./(sqrt(unCenVarMean) + 1e-8)).*momentumMean
-            negLogVariance = negLogVariance +...
-                (params.robbinsMonro.stepWidth*params.robbinsMonro.offset/(params.robbinsMonro.offset + RMsteps))*...
-                (1./(sqrt(unCenVarVar) + 1e-8)).*momentumVar;
-            variationalGaussVariance = 1./(exp(negLogVariance))
+                (1./(sqrt(uncenteredParameterVariance) + 1e-8)).*momentum
         end
         
         %converged?
-        if (norm(oldParams - [variationalGaussMean variationalGaussVariance])/norm([variationalGaussMean variationalGaussVariance]) < params.robbinsMonro.relXtol)
+        if (norm(oldParams - variationalParameters)/norm(variationalParameters) < params.robbinsMonro.relXtol)
             converged = true;
         end
         RMsteps = RMsteps + 1;
     end
     
     %Construct function handle to optimal variational distribution
+    variationalGaussMean = variationalParameters(1:dim);
+    variationalGaussVariance = 1./(exp(variationalNegLogVariance));    
     optVarDist.dist = @(x) normpdf(x, variationalGaussMean, sqrt(variationalGaussVariance));
-    optVarDist.params{1} = variationalGaussMean;
-    optVarDist.params{2} = variationalGaussVariance;
+    %variationalParameters = [mean, log(sigma^-2)]
+    optVarDist.params = variationalParameters;
     
     elseif strcmp(params.family, 'fullRankGaussian')
     varMean = params.initialParams{1};
@@ -231,11 +167,11 @@ elseif strcmp(params.family, 'diagonalGaussian')
     d_LSamples = zeros(dim, dim, params.nSamples);
     while ~converged
         %Draw samples from variational distribution
-        varSamples = mvnrnd(varMean, varCovar, params.nSamples); %1 sample = 1 row
+        samples = mvnrnd(varMean, varCovar, params.nSamples); %1 sample = 1 row
         
         %Gradient of variational distribution w.r.t. params
         for i = 1:params.nSamples
-            samplesMinusMu(i, :) = (varSamples(i, :) - varMean);
+            samplesMinusMu(i, :) = (samples(i, :) - varMean);
         end
         d_muSamples = samplesMinusMu*varPrecision;
         %L is an upper triangle Cholesky factorization matrix of varPrecision
@@ -247,7 +183,7 @@ elseif strcmp(params.family, 'diagonalGaussian')
         logdetL = sum(log(diag(abs(L))));
         for i = 1:params.nSamples
             %The right factor in eq. 3 in Ranganath, Gerrish, Blei
-            rightFactor = logTrueCondDist(varSamples(i, :)) + logpi - logdetL...
+            rightFactor = logTrueCondDist(samples(i, :)) + logpi - logdetL...
                 + .5*samplesMinusMu(i, :)*varPrecision*samplesMinusMu(i, :)';
             RMsamples_mu(i, :) = d_muSamples(i, :)*rightFactor;
             RMsamples_L(:, :, i) = d_LSamples(:, :, i)*rightFactor;
