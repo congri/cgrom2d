@@ -143,7 +143,7 @@ for k = 2:(maxIterations + 1)
             X_start{i} = normrnd(MCMC(i).Xi_start, .01);
             Xmax{i} = max_qi(log_qi{i}, X_start{i});
             VIparams.initialParams{1} = Xmax{i}'
-            [optVarDist{i}, RMsteps{i}] = varInf(log_qi{i}, VIparams);
+            [optVarDist{i}, RMsteps{i}] = variationalInference(log_qi{i}, VIparams);
         end
         optVarDist{1}
         optVarDist{2}
