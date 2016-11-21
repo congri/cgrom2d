@@ -15,7 +15,7 @@ Tffile = matfile(strcat(fineDataPath, trainFileName));
 fineData.lo = 1;
 fineData.up = contrast;
 
-sample = 1;
+sample = 2;
 cond = Tffile.cond(sample, :);        %Finescale conductivities - load partially to save memory
 
 nElX = sqrt(length(cond));
@@ -64,3 +64,10 @@ pcolor(cond)
 axis square
 xlabel('x')
 ylabel('y')
+
+%% Least squares fit to theoretical curve
+Lmean = .5*(L{1} + L{2});
+x = 1:maxPathLength;
+f = fit(x', Lmean', 'exp1')
+figure
+plot(x, Lmean, x, f.a*exp(f.b*x))

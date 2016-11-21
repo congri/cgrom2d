@@ -10,9 +10,10 @@ cond = Tffile.cond(nTrain_lo:nTrain_up, :);        %Finescale conductivities - l
 [E] = get_coarse_el([domainf.nElX, domainf.nElY], [domainc.nElX, domainc.nElY], 1:domainf.nEl);
 
 PhiArray = zeros(domainc.nEl, numel(phi), size(cond, 1));
-for s = 1:size(cond, 1)
+parfor s = 1:size(cond, 1)
     %inputs belonging to same coarse element are in the same column of xk. They are ordered in
     %x-direction.
+    PhiCell{s} = zeros(domainc.nEl, numel(phi));
     lambdak = zeros(domainf.nEl/domainc.nEl, domainc.nEl);
     for i = 1:domainc.nEl
         lambdak(:, i) = cond(s, E == i);
@@ -21,9 +22,13 @@ for s = 1:size(cond, 1)
     %construct design matrix Phi
     for i = 1:domainc.nEl
         for j = 1:numel(phi)
-            PhiArray(i, j, s) = phi{j}(lambdak(:, i));
+            PhiCell{s}(i, j) = phi{j}(lambdak(:, i));
         end
     end  
+end
+
+for i = 1:size(cond, 1)
+    PhiArray(:, :, i) = PhiCell{i};
 end
 disp('done')
 Phi_computation_time = toc

@@ -14,19 +14,21 @@ genBasisFunctions;
 
 %% EM params
 basisFunctionUpdates = 0;
-basisUpdateGap = 80;
+basisUpdateGap = 40;
 maxIterations = (basisFunctionUpdates + 1)*basisUpdateGap - 1;
 
 %% Start value of model parameters
 %Shape function interpolate in W
 theta_cf.W = shapeInterp(domainc, domainf);
-theta_cf.S = 1*ones(domainf.nNodes, 1);
+theta_cf.S = 2*ones(domainf.nNodes, 1);
 theta_cf.Sinv = sparse(1:domainf.nNodes, 1:domainf.nNodes, 1./theta_cf.S);
 %precomputation to save resources
 theta_cf.WTSinv = theta_cf.W'*theta_cf.Sinv;
 theta_cf.mu = zeros(domainf.nNodes, 1);
 % theta_c.theta = (1/size(phi, 1))*ones(size(phi, 1), 1);
-theta_c.theta = rand(nBasis, 1) - .5;
+% theta_c.theta = (1/nBasis)*ones(nBasis, 1);
+theta_c.theta = zeros(nBasis, 1);
+% theta_c.theta = 0;
 theta_c.sigma = 1;
 
 
@@ -35,19 +37,20 @@ prior_type = 'hierarchical_gamma';                  %hierarchical_gamma, hierarc
 %prior hyperparams; obsolete for no prior
 % prior_hyperparam = 100*eye(size(phi, 1));         %variance of prior gaussian
 % prior_hyperparam = 1;                             %Exponential decay parameter for laplace
-prior_hyperparam = [0; 1e-1];                        %parameters a, b of gamma hyperprior, a, b > 0, but not too small.
+% prior_hyperparam = [0; 1e-10];                        %parameters a, b of gamma hyperprior, a, b > 0, but not too small.
                                                     %The smaller b, the more aggressive sparsity
+prior_hyperparamArray = [zeros(16, 1), (logspace(5, -10, 16))'];
 
 %% MCMC options
 MCMC.method = 'MALA';                                %proposal type: randomWalk, nonlocal or MALA
 MCMC.seed = 10;
 MCMC.nThermalization = 0;                            %thermalization steps
-nSamplesBeginning = [50];
-MCMC.nSamples = 50;                                 %number of samples
-MCMC.nGap = 100;                                     %decorrelation gap
+nSamplesBeginning = [40];
+MCMC.nSamples = 40;                                 %number of samples
+MCMC.nGap = 40;                                     %decorrelation gap
 MCMC.Xi_start = 20*ones(domainc.nEl, 1);
 %only for random walk
-MCMC.MALA.stepWidth = .005;
+MCMC.MALA.stepWidth = .01;
 stepWidth = 2e-0;
 MCMC.randomWalk.proposalCov = stepWidth*eye(domainc.nEl);   %random walk proposal covariance
 MCMC = repmat(MCMC, nTrain, 1);
@@ -66,15 +69,18 @@ mix_W = 0;
 mix_theta = 0;
 
 %% Variational inference params
-dim = 4;        %ATTENTION: set params accordingly
+dim = domainc.nEl;
 VIparams.family = 'diagonalGaussian';
-VIparams.initialParams{1} = zeros(1, dim);
+VIparams.initialParams{1} = 2*ones(1, dim);
+VIparams.RMtype = 'adam';
 VIparams.initialParams{2} = ones(1, dim);
-VIparams.nSamples = 500;
-VIparams.robbinsMonro.stepWidth = 5;
-VIparams.robbinsMonro.offset = 10;
-VIparams.robbinsMonro.relXtol = 1e-6;
-VIparams.robbinsMonro.adaGradSteps = 400;   %only works for diagonal Gaussian
+VIparams.nSamples = 100;
+VIparams.robbinsMonro.stepWidth = 8;
+VIparams.robbinsMonro.offset = 100;
+VIparams.robbinsMonro.relXtol = 1e-5;
+VIparams.decayParam = .9;   %only works for diagonal Gaussian
+VIparams.adam.beta1 = .9;
+VIparams.adam.beta2 = .999;
 
 
 

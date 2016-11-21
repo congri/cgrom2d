@@ -11,10 +11,12 @@ lowerBound = 1e-10;
 if any(conductivity < lowerBound)
     %lower bound on conductivity for stability
     conductivity(conductivity < lowerBound) = lowerBound;
+    warning('Effective conductivity is below lower bound')
 end
 if any(conductivity > upperBound)
     %upper bound on conductivity for stability
     conductivity(conductivity > upperBound) = upperBound;
+    warning('Effective conductivity is above upper bound')
 end
 
 [lg_p_c, d_lg_p_c] = log_p_c(Xi, Phi, theta_c.theta, theta_c.sigma);
