@@ -4,9 +4,9 @@ phi_2 = @(lambda) log(mean(lambda));
 phi_3 = @(lambda) mean(log(lambda));
 phi_4 = @(lambda) 1;
 
-dLinPathMax = 21;
+dLinPathMax = 60;
 dLinPathMin = 0;
-dLinPathIncr = 1;
+dLinPathIncr = 4;
 i = 1;
 nElc = [domainc.nElX domainc.nElY];
 nElf = [domainf.nElX domainf.nElY];
@@ -17,7 +17,7 @@ for d = dLinPathMin:dLinPathIncr:dLinPathMax
 end
 
 
-d2pointCorrMax = 21;
+d2pointCorrMax = 1;
 d2pointCorrMin = 2;
 d2pointCorrIncr = 1;
 i = 1;
@@ -27,9 +27,9 @@ for d = d2pointCorrMin:d2pointCorrIncr:d2pointCorrMax
     i = i + 1;
 end
 
-maxPathLength = 70;
-lpa = @(lambda) log(linPathParams(lambda, maxPathLength, fineData, domainc, domainf, 'a'));
-lpb = @(lambda) log(abs(linPathParams(lambda, maxPathLength, fineData, domainc, domainf, 'b')));
+pathLengths = (0:10:200)';
+lpa = @(lambda) log(linPathParams(lambda, pathLengths, fineData, domainc, domainf, 'a'));
+lpb = @(lambda) log(abs(linPathParams(lambda, pathLengths, fineData, domainc, domainf, 'b')));
 
-phi = {phi_2};
+phi = {phi_1 phi_2 phi_3 lpb};
 nBasis = numel(phi);

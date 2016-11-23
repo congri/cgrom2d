@@ -4,6 +4,7 @@ tic;    %measure runtime
 clear all;
 
 addpath('./params')
+addpath('./aux')
 addpath('./heatFEM')
 addpath('./rom')
 addpath('./computation')
@@ -139,16 +140,50 @@ for k = 2:(maxIterations + 1)
         end
         clear Tc_samples;
     elseif VI
-        for i = 1:3
-            X_start{i} = normrnd(MCMC(i).Xi_start, .01);
-            Xmax{i} = max_qi(log_qi{i}, X_start{i});
-            VIparams.initialParams{1} = Xmax{i}'
-            [optVarDist{i}, RMsteps{i}] = variationalInference(log_qi{i}, VIparams);
+        disp('Finding optimal variational distributions...')
+        parfor i = 1:nTrain
+            [optVarDist{i}, RMsteps{i}] = variationalInference(log_qi{i}, VIparams, initialParamsArray{i});
+            initialParamsArray{i} = optVarDist{i}.params;
+            if(strcmp(VIparams.family, 'diagonalGaussian'))
+                XMean(:, i) = optVarDist{i}.params(1:domainc.nEl);
+                XNormSqMean(i) = sum([optVarDist{i}.params(1:domainc.nEl).^2 exp(-optVarDist{i}.params((domainc.nEl + 1):end))]);
+            else
+                error('VI not implemented for this family of functions')
+            end
         end
-        optVarDist{1}
-        optVarDist{2}
-        optVarDist{3}
-        error
+        %Set start values for next iteration
+        for i = 1:nTrain
+            VIparams.initialParams{i} = optVarDist{i}.params;
+        end
+        disp('done')
+        %Sample from VI distributions and solve coarse model
+        for i = 1:nTrain
+            Tf_i_minus_mu = Tf(:, i) - theta_cf.mu;
+            if(strcmp(VIparams.family, 'diagonalGaussian'))
+                VImean = optVarDist{i}.params(1:domainc.nEl);
+                VIsigma = exp(-.5*optVarDist{i}.params((domainc.nEl + 1):end));
+                %Samples of conductivity
+                samples = logCond2Cond(mvnrnd(VImean, VIsigma, VIparams.inferenceSamples), 1e-10, 1e10);
+                
+                for s = 1:VIparams.inferenceSamples
+                    for j = 1:domainc.nEl
+                        D(:, :, j) =  samples(s, j)*eye(2);
+                    end
+                    FEMout = heat2d(domainc, D);
+                    
+                    Tc = FEMout.Tff';
+                    Tc_samples(:, s, i) = Tc(:);
+                end
+                p_cf_exponent(:, i) = mean((repmat(Tf_i_minus_mu, 1, VIparams.inferenceSamples)...
+                        - theta_cf.W*Tc_samples(:, :, i)).^2, 2);
+            else
+                error('VI not implemented for this family of functions')
+            end
+        end
+        
+        
+        
+        
     end
     
     %% M-step: determine optimal parameters given the sample set

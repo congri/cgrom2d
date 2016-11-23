@@ -8,7 +8,7 @@ nSamples = 200;
 fineDataPath = strcat('/home/constantin/matlab/data/fineData/');
 %Name of training data file
 trainFileName = strcat('train_', 'nf=', num2str(nf), '_contrast=', num2str(contrast), '_samples=',...
-    num2str(nSamples));
+    num2str(nSamples), '_corrlength=', num2str(50/512));
 %load finescale temperatures partially
 Tffile = matfile(strcat(fineDataPath, trainFileName));
 

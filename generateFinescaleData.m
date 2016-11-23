@@ -40,7 +40,7 @@ elseif (strcmp(fineData.dist, 'uniform') || strcmp(fineData.dist, 'binary')...
         if strcmp(fineData.dist, 'correlated_binary')
             fineData.lx = 10*domainf.lElX;
             fineData.ly = 10*domainf.lElY;
-            fineData.sigma_f2 = 1; %has this parameter any impact?
+            fineData.sigma_f2 = 1; %GP variance parameter. Has this parameter any impact?
         end
     end
 else
@@ -64,10 +64,10 @@ clear condAll;
 %% Save data
 %Name of training data file
 trainFileName = strcat('train_', 'nf=', num2str(nf), '_contrast=', num2str(contrast), '_samples=',...
-    num2str(fineData.nSamples));
+    num2str(fineData.nSamples), '_corrlength=', num2str(fineData.lx));
 %Name of test data file
 testFileName = strcat('test_', 'nf=', num2str(nf), '_contrast=', num2str(contrast), '_samples=',...
-    num2str(fineData.nTest));
+    num2str(fineData.nTest), '_corrlength=', num2str(fineData.lx));
 %Name of parameter file
 paramFileName = strcat('param_', 'nf=', num2str(nf), '_contrast=', num2str(contrast));
 %Folder where finescale data is saved

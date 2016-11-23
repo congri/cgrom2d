@@ -1,11 +1,11 @@
-function [theta] = oBFGS(meanGradFun, samplesFun, RMstepWidth, RMoff, c, lambda, epsilon, thetaInit, nSamples)
+function [theta] = oBFGS(meanGradFun, samplesFun, RMstepWidth, RMoff, c, lambda, epsilon, thetaInit)
 %Stochastic BFGS, see Schraudolph, Yu, Guenter
 debug = true;  %set true for debug output
 
 t = 0;
 theta = thetaInit
-samples = samplesFun(theta, nSamples);
-grad = meanGradFun(samples, theta);
+samples = samplesFun(theta);
+grad = meanGradFun(samples, theta)';
 dim = length(grad);
 I = eye(dim);
 B = epsilon*eye(dim);
@@ -23,12 +23,12 @@ while(~converged)
     eta = (RMstepWidth*RMoff)/(RMoff + t);
     p = - B*grad;
     s = (eta/c)*p;
-    theta = theta + s;
+    theta = (theta + s');
     
     %update gradient
     grad_old = grad;
     theta
-    grad = meanGradFun(samples, theta);
+    grad = meanGradFun(samples, theta)';
     y = grad - grad_old + lambda*s;
     sy = s'*y;     %ensure that B is pos def with abs?
     syMat = s*y';
@@ -62,25 +62,28 @@ while(~converged)
         p
         s
         theta
-        exp(-.5*theta(5:end))
         y
         sy
         rho
         B
         eigB = eig(B)
+        subplot(1,2,1)
         plot(t, theta, 'xr', 'linewidth', 3)
         hold on
+        subplot(1,2,2)
+        plot(t, mean_k_gradient, 'xr', 'linewidth', 3)
+        hold on
         drawnow
-        pause
     end
     
     
     %Converged?
+    mean_k_gradient
     if norm(mean_k_gradient) < maxMeanGrad
         converged = true;
     else
         %resample and go on
-        samples = samplesFun(theta, nSamples);
+        samples = samplesFun(theta);
     end
        
 end

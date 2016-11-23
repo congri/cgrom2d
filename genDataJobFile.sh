@@ -1,11 +1,12 @@
 NF=512
-CONTRAST=2
+CONTRAST=100
+CORRLENGTH=50
 NTRAIN=200
 NTEST=56
 
 #Set up file paths
 PROJECTDIR="/home/constantin/matlab/projects/cgrom2d"
-JOBNAME="genDataNf${NF}contrast${CONTRAST}"
+JOBNAME="genDataNf${NF}contrast${CONTRAST}corrlength${CORRLENGTH}"
 JOBDIR="/home/constantin/matlab/data/$JOBNAME"
 
 #Create job directory and copy source code
@@ -27,6 +28,8 @@ printf "#PBS -N $JOBNAME
 cd $JOBDIR
 #Set parameters
 sed -i \"35s/.*/    fineData.up = $CONTRAST;   %%Change jobfile if you change this line number!/\" ./generateFinescaleData.m
+sed -i \"41s/.*/            fineData.lx = $CORRLENGTH*domainf.lElX;/\" ./generateFinescaleData.m
+sed -i \"42s/.*/            fineData.ly = $CORRLENGTH*domainf.lElY;/\" ./generateFinescaleData.m
 sed -i \"15s/.*/nf = $NF;       %%Should be 2^n/\" ./generateFinescaleData.m
 sed -i \"26s/.*/fineData.nSamples = $NTRAIN;/\" ./generateFinescaleData.m
 sed -i \"27s/.*/fineData.nTest = $NTEST;/\" ./generateFinescaleData.m
