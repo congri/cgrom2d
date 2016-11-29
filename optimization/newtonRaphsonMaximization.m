@@ -1,4 +1,4 @@
-function [curr_x, grad, Hess, nIter] = newtonRaphsonMaximization(objective, startValue, Xtol, provide_objective, debug)
+function [curr_x, grad, Hess, nIter] = newtonRaphsonMaximization(objective, startValue, Xtol, provide_objective, stepSize, debug)
 %Maximization based on the well-known Newton-Raphson method
 %%Input:
 %   objective:              func. handle with [grad., Hess., obj.] as output
@@ -6,7 +6,6 @@ function [curr_x, grad, Hess, nIter] = newtonRaphsonMaximization(objective, star
 %   Xtol:                   Tolerance in x for convergence
 
 %step size parameter, 0 < gamma < 1
-gamma = .5;
 RMfac2 = (1e-5)*ones(length(startValue), 1);
 
 %%Optimization
@@ -26,15 +25,15 @@ nIter = 1;
 while(~converged)
     old_x = curr_x;
     if(~provide_objective)
-        curr_x = old_x - gamma*step;
+        curr_x = old_x - stepSize*step;
     else
-        temp_x = old_x - gamma*step;
+        temp_x = old_x - stepSize*step;
         [grad_temp, Hess_temp, obj_temp] = objective(temp_x);
         nIter = nIter + 1;
         step_temp = Hess_temp\grad_temp;
         while(obj_temp < obj)
             step_temp = .9*step_temp;
-            temp_x = old_x - gamma*step_temp;
+            temp_x = old_x - stepSize*step_temp;
             [grad_temp, Hess_temp, obj_temp] = objective(temp_x);
             nIter = nIter + 1;
         end
@@ -55,7 +54,7 @@ while(~converged)
             [grad, Hess] = objective(curr_x);
             %check for negative definiteness
             if(~all(all(isfinite(Hess))) || any(eig(Hess) >= 0))
-                warning('Hessian not negative definite, do Robbins-Monro instead')
+%                 warning('Hessian not negative definite, do Robbins-Monro instead')
                 RMoff = 100;
                 RMfac1 = RMoff/(RMoff + nIter);
                 signChange = grad_old.*grad;
@@ -89,6 +88,10 @@ while(~converged)
             if(mod(nIter, 500) == 0)
                 pause
             end
+        end
+        
+        if mod(nIter, 20) == 0
+            stepSize = .9*stepSize;
         end
     end
 end

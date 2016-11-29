@@ -19,26 +19,25 @@ maxIterations = (basisFunctionUpdates + 1)*basisUpdateGap - 1;
 %% Start value of model parameters
 %Shape function interpolate in W
 theta_cf.W = shapeInterp(domainc, domainf);
-theta_cf.S = 1*ones(domainf.nNodes, 1);
+theta_cf.S = (1e-5)*ones(domainf.nNodes, 1);
 theta_cf.Sinv = sparse(1:domainf.nNodes, 1:domainf.nNodes, 1./theta_cf.S);
 %precomputation to save resources
 theta_cf.WTSinv = theta_cf.W'*theta_cf.Sinv;
 theta_cf.mu = zeros(domainf.nNodes, 1);
 % theta_c.theta = (1/size(phi, 1))*ones(size(phi, 1), 1);
 % theta_c.theta = (1/nBasis)*ones(nBasis, 1);
-theta_c.theta = 0*ones(nBasis, 1);
-theta_c.theta(end) = 1;
+theta_c.theta = zeros(nBasis, 1);
+% theta_c.theta(end) = 1;
 % theta_c.theta = 0;
-theta_c.sigma = 1e-20;
+theta_c.sigma = .1;
 
 
 %what kind of prior for theta_c
-prior_type = 'hierarchical_gamma';                  %hierarchical_gamma, hierarchical_laplace, laplace, gaussian or none
+theta_prior_type = 'hierarchical_gamma';                  %hierarchical_gamma, hierarchical_laplace, laplace, gaussian or none
+sigma_prior_type = 'exponential_sigma';
 %prior hyperparams; obsolete for no prior
-% prior_hyperparam = 100*eye(size(phi, 1));         %variance of prior gaussian
-% prior_hyperparamArray = 1;                          %For hierarchical Laplace: the bigger, the sharper
-prior_hyperparamArray = [0, 1e-5];                   %a and b params for Gamma hyperprior
-% prior_hyperparamArray = [.9 1e-8 1e0];              %Spike and slab: spike weight, spike var, slab var
+theta_prior_hyperparam = [0, 1e-8];                   %a and b params for Gamma hyperprior
+sigma_prior_hyperparam = 1e7;
 
 %% MCMC options
 MCMC.method = 'MALA';                                %proposal type: randomWalk, nonlocal or MALA
@@ -62,7 +61,7 @@ for i = 1:fineData.nSamples
 end
 
 %% Control convergence velocity - take weighted mean of adjacent parameter estimates
-mix_sigma = .9999;
+mix_sigma = 0;
 mix_S = 0;
 mix_W = 0;
 mix_theta = 0;
@@ -70,13 +69,13 @@ mix_theta = 0;
 %% Variational inference params
 dim = domainc.nEl;
 VIparams.family = 'diagonalGaussian';
-initialParamsArray{1} = [.02*ones(1, domainc.nEl) 1*ones(1, domainc.nEl)];
+initialParamsArray{1} = [ones(1, domainc.nEl) 10*ones(1, domainc.nEl)];
 initialParamsArray = repmat(initialParamsArray, nTrain, 1);
-VIparams.nSamples = 100;    %Gradient samples per iteration
+VIparams.nSamples = 50;    %Gradient samples per iteration
 VIparams.inferenceSamples = 100;
 VIparams.optParams.optType = 'adam';
 VIparams.optParams.dim = domainc.nEl;
-VIparams.optParams.stepWidth = .1;
+VIparams.optParams.stepWidth = .01;
 VIparams.optParams.XWindow = 20;    %Averages dependent variable over last iterations
 VIparams.optParams.offset = 10000;  %Robbins-Monro offset
 VIparams.optParams.relXtol = 1e-12;

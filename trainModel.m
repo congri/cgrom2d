@@ -13,6 +13,7 @@ addpath('./MCMCsampler')
 addpath('./optimization')
 addpath('./genConductivity')
 addpath('./variationalInference')
+addpath('./featureFunctions')
 
 rng('shuffle')  %system time seed
 
@@ -190,7 +191,7 @@ for k = 2:(maxIterations + 1)
     %% M-step: determine optimal parameters given the sample set
     disp('M-step: find optimal params')
     %Optimal S (decelerated convergence)
-    lowerBoundS = 1e-6;
+    lowerBoundS = 1e-10;
     theta_cf.S = (1 - mix_S)*mean(p_cf_exponent, 2)...
         + mix_S*theta_cf.S + lowerBoundS*ones(domainf.nNodes, 1);
     clear p_cf_exponent;
@@ -204,13 +205,10 @@ for k = 2:(maxIterations + 1)
         sumPhiTXmean = sumPhiTXmean + PhiArray(:,:,i)'*XMean(:,i);
     end
 
-    %to have less agressive sparsity prior at beginning
-    if(k - 1 <= size(prior_hyperparamArray, 1))
-        prior_hyperparam = prior_hyperparamArray(k - 1, :);
-    end
     sigma_old = theta_c.sigma;
     [theta_c] = optTheta_c(theta_c, nTrain, domainc.nEl, XNormSqMean,...
-        sumPhiTXmean, sumPhiSq, prior_type, prior_hyperparam);
+        sumPhiTXmean, sumPhiSq, theta_prior_type, theta_prior_hyperparam,...
+        sigma_prior_type, sigma_prior_hyperparam);
     theta_c.sigma = (1 - mix_sigma)*theta_c.sigma + mix_sigma*sigma_old;
     disp('M-step done, current params:')
     curr_theta = theta_c.theta

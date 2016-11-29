@@ -1,5 +1,6 @@
 function [theta_c] = optTheta_c(theta_c, nTrain, nCoarse, XNormSqMean,...
-    sumPhiTXmean, sumPhiSq, prior_type, prior_hyperparam)
+    sumPhiTXmean, sumPhiSq, theta_prior_type, theta_prior_hyperparam,...
+    sigma_prior_type, sigma_prior_hyperparam)
 %% Find optimal theta_c and sigma
 
 % %compute gradients of posterior lower bound F
@@ -32,21 +33,33 @@ while(~converged)
     
     
     %Newton-Raphson maximization
-    startValue = theta;
+    startValueTheta = theta;
     Xtol = 1e-8;
     provide_objective = false;
     debugNRmax = false;
-    gradHess = @(theta) dF2(theta, sigma2, theta_c, prior_type, prior_hyperparam, nTrain,...
+    gradHessTheta = @(theta) dF2(theta, sigma2, theta_c, theta_prior_type, theta_prior_hyperparam, nTrain,...
     sumPhiTXmean, sumPhiSq);
     theta_old = theta;
-    theta = newtonRaphsonMaximization(gradHess, startValue,...
-        Xtol, provide_objective, debugNRmax);
+    stepSizeTheta = .8;
+    theta = newtonRaphsonMaximization(gradHessTheta, startValueTheta,...
+        Xtol, provide_objective, stepSizeTheta, debugNRmax);
     
-    sigma2 = (1/(nCoarse*nTrain))*(sum(XNormSqMean) - 2*theta'*sumPhiTXmean...
-        + theta'*sumPhiSq*theta);
+    gradHessLogSigmaMinus2 = @(logSigmaMinus2) dFlogSigmaMinus2(logSigmaMinus2, theta, nCoarse, nTrain, XNormSqMean,...
+    sumPhiTXmean, sumPhiSq, sigma_prior_type, sigma_prior_hyperparam);
+    startValueLogSigmaMinus2 = -log(sigma2);
+    stepSizeSigma = .1;
+    logSigmaMinus2 = newtonRaphsonMaximization(gradHessLogSigmaMinus2, startValueLogSigmaMinus2,...
+        Xtol, provide_objective, stepSizeSigma, debugNRmax);
+    
+    sigmaMinus2 = exp(logSigmaMinus2);
+    sigma2 = 1/sigmaMinus2;
+    
+%     sigma2 = (1/(nCoarse*nTrain))*(sum(XNormSqMean) - 2*theta'*sumPhiTXmean...
+%         + theta'*sumPhiSq*theta) - (2/(nCoarse*nTrain))*...
+%         d_log_prior_sigma(sqrt(sigma2), sigma_prior_type, sigma_prior_hyperparam);
     
     iter = iter + 1;
-    if(iter > 30 || norm(theta_old -theta) < 1e-4)
+    if(iter > 30 || norm(theta_old - theta)/norm(theta) < 1e-4)
         converged = true;
     end
     
