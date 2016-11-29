@@ -8,14 +8,14 @@ nSamples = 200;
 fineDataPath = strcat('/home/constantin/matlab/data/fineData/');
 %Name of training data file
 trainFileName = strcat('train_', 'nf=', num2str(nf), '_contrast=', num2str(contrast), '_samples=',...
-    num2str(nSamples), '_corrlength=', num2str(50/512));
+    num2str(nSamples), '_corrlength=', num2str(30));
 %load finescale temperatures partially
 Tffile = matfile(strcat(fineDataPath, trainFileName));
 
 fineData.lo = 1;
 fineData.up = contrast;
 
-sample = 2;
+sample = 5;
 cond = Tffile.cond(sample, :);        %Finescale conductivities - load partially to save memory
 
 nElX = sqrt(length(cond));

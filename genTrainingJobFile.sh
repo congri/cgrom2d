@@ -1,9 +1,11 @@
-NTRAIN=16
+NTRAIN=64
 CONTRAST=100
+CORRLENGTH=20
+NC=4
 
 DATESTR=`date +%m-%d-%H-%M-%S`	#datestring for jobfolder name
 PROJECTDIR="/home/constantin/matlab/projects/cgrom2d"
-JOBNAME="trainModel_nTrain${NTRAIN}contrast${CONTRAST}prior_1"
+JOBNAME="trainModel_nTrain${NTRAIN}contrast${CONTRAST}spikeAndSlab${NC}x${NC}"
 JOBDIR="/home/constantin/matlab/data/$DATESTR$JOBNAME"
 
 #Create job directory and copy source code
@@ -26,8 +28,8 @@ cd $JOBDIR
 #Set parameters
 sed -i \"4s/.*/nTrain = $NTRAIN;/\" ./params/params.m
 sed -i \"6s/.*/jobname = '$JOBNAME';/\" ./params/params.m
-sed -i \"40s/.*/prior_hyperparam = [0; 1];/\" ./params/params.m
 sed -i \"5s/.*/contrast = $CONTRAST;/\" ./loadTrainingData.m
+sed -i \"2s/.*/nc = $NC;/\" ./params/genCoarseDomain.m
 
 
 #Run Matlab

@@ -7,7 +7,7 @@ function [curr_x, grad, Hess, nIter] = newtonRaphsonMaximization(objective, star
 
 %step size parameter, 0 < gamma < 1
 gamma = .5;
-RMfac2 = [1; 1];
+RMfac2 = (1e-5)*ones(length(startValue), 1);
 
 %%Optimization
 converged = false;
@@ -56,7 +56,7 @@ while(~converged)
             %check for negative definiteness
             if(~all(all(isfinite(Hess))) || any(eig(Hess) >= 0))
                 warning('Hessian not negative definite, do Robbins-Monro instead')
-                RMoff = 1000;
+                RMoff = 100;
                 RMfac1 = RMoff/(RMoff + nIter);
                 signChange = grad_old.*grad;
                 signChange = (signChange < 0);

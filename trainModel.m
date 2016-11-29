@@ -28,6 +28,7 @@ Tf = Tffile.Tf(:, 1:nTrain);        %Finescale temperatures - load partially to 
 
 % Compute design matrix for each data point
 PhiArray = designMatrix(phi, domainf, domainc, Tffile, 1, nTrain);
+assert(all(all(all(isfinite(PhiArray)))), 'Error: non-finite design matrix Phi')
 % Compute sum_i Phi^T(x_i)^Phi(x_i)
 sumPhiSq = zeros(numel(phi), numel(phi));
 for i = 1:nTrain
@@ -207,8 +208,10 @@ for k = 2:(maxIterations + 1)
     if(k - 1 <= size(prior_hyperparamArray, 1))
         prior_hyperparam = prior_hyperparamArray(k - 1, :);
     end
+    sigma_old = theta_c.sigma;
     [theta_c] = optTheta_c(theta_c, nTrain, domainc.nEl, XNormSqMean,...
         sumPhiTXmean, sumPhiSq, prior_type, prior_hyperparam);
+    theta_c.sigma = (1 - mix_sigma)*theta_c.sigma + mix_sigma*sigma_old;
     disp('M-step done, current params:')
     curr_theta = theta_c.theta
     curr_sigma = theta_c.sigma

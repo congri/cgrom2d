@@ -38,8 +38,8 @@ if strcmp(params.family, 'diagonalGaussian')
     varGrad = -.5*(varGrad.*variationalStd);
     grad = [meanGrad varGrad];
     if nargout > 1
-        MeanGradErr = sqrt(meanGradSq - meanGrad.^2)/params.nSamples;
-        VarGradErr = sqrt(varGradSq - varGrad.^2)/params.nSamples;
+        MeanGradErr = real(sqrt(meanGradSq - meanGrad.^2))/params.nSamples;
+        VarGradErr = real(sqrt(varGradSq - varGrad.^2))/params.nSamples;
         gradErr = [MeanGradErr VarGradErr];
     end
 end

@@ -107,7 +107,7 @@ else
             gradient_norm_mean = mean(grad_normArray);
             gradArrayTemp = [gradArray; grad];
             gradArray = gradArrayTemp(2:end, :);
-            gradient_mean = mean(grad_normArray);
+            gradient_mean = mean(gradArray);
         end
         
         if (debug || steps > 500)
@@ -121,11 +121,11 @@ else
             if debug
                 %Plot X and gradient
                 subplot(1,3,1)
-                plot(steps, X, 'rx', 'linewidth', 3)
+                plot(steps, X, 'rx', 'linewidth', 1)
                 axis square
                 hold on
                 subplot(1,3,2)
-                plot(steps, grad, 'bx', 'linewidth', 3)
+                plot(steps, grad, 'bx', 'linewidth', 1)
                 axis square
                 hold on
                 subplot(1,3,3)

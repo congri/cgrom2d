@@ -4,13 +4,14 @@
 nf = 512;
 contrast = 100;
 nSamples = 200;
+corrlength = 20;
 %Folder where finescale data is saved
 fineDataPath = strcat('/home/constantin/matlab/data/fineData/');
 %Name of training data file
 trainFileName = strcat('train_', 'nf=', num2str(nf), '_contrast=', num2str(contrast), '_samples=',...
-    num2str(nSamples), '_corrlength=', num2str(50/512));
+    num2str(nSamples), '_corrlength=', num2str(corrlength));
 %Name of parameter file
-paramFileName = strcat('param_', 'nf=', num2str(nf), '_contrast=', num2str(contrast));
+paramFileName = strcat('param_', 'nf=', num2str(nf), '_contrast=', num2str(contrast), '_corrlength=', num2str(corrlength));
 
 %load data params
 load(strcat(fineDataPath, paramFileName));

@@ -36,7 +36,7 @@ elseif (strcmp(fineData.dist, 'uniform') || strcmp(fineData.dist, 'binary')...
     contrast = fineData.up/fineData.lo;
     %for binary
     if (strcmp(fineData.dist, 'binary') || strcmp(fineData.dist, 'correlated_binary'))
-        fineData.p_lo = 0;  %this controls volume fraction
+        fineData.p_lo = .5;  %this controls volume fraction
         if strcmp(fineData.dist, 'correlated_binary')
             fineData.lx = 10*domainf.lElX;
             fineData.ly = 10*domainf.lElY;
@@ -63,13 +63,17 @@ clear condAll;
 
 %% Save data
 %Name of training data file
-trainFileName = strcat('train_', 'nf=', num2str(nf), '_contrast=', num2str(contrast), '_samples=',...
-    num2str(fineData.nSamples), '_corrlength=', num2str(fineData.lx));
+trainFileName = strcat('train_', 'nf=', num2str(nf), '_locond=', num2str(fineData.lo),...
+    '_hicond=', num2str(fineData.up), '_samples=', num2str(fineData.nSamples),...
+    '_corrlength=', num2str(fineData.lx/domainf.lElX), '_volfrac=', num2str(fineData.p_lo));
 %Name of test data file
-testFileName = strcat('test_', 'nf=', num2str(nf), '_contrast=', num2str(contrast), '_samples=',...
-    num2str(fineData.nTest), '_corrlength=', num2str(fineData.lx));
+testFileName = strcat('test_', 'nf=', num2str(nf), '_locond=', num2str(fineData.lo),...
+    '_hicond=', num2str(fineData.up), '_samples=', num2str(fineData.nSamples),...
+    '_corrlength=', num2str(fineData.lx/domainf.lElX), '_volfrac=', num2str(fineData.p_lo));
 %Name of parameter file
-paramFileName = strcat('param_', 'nf=', num2str(nf), '_contrast=', num2str(contrast));
+paramFileName = strcat('param_', 'nf=', num2str(nf), '_locond=', num2str(fineData.lo),...
+    '_hicond=', num2str(fineData.up), '_samples=', num2str(fineData.nSamples),...
+    '_corrlength=', num2str(fineData.lx/domainf.lElX), '_volfrac=', num2str(fineData.p_lo));
 %Folder where finescale data is saved
 fineDataPath = '/home/constantin/matlab/data/fineData/';
 
