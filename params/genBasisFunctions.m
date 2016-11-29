@@ -31,8 +31,11 @@ pathLengths = (0:4:60)';
 lpa = @(lambda) log(linPathParams(lambda, pathLengths, fineData, domainc, domainf, 'a'));
 lpb = @(lambda) log(abs(linPathParams(lambda, pathLengths, fineData, domainc, domainf, 'b')));
 
+mps = @(lambda) meanPoreSize(lambda, 2, fineData, nElc, nElf);
+
 phi = linPath;
 phi{end + 1} = lpa;
 phi{end + 1} = lpb;
 phi{end + 1} = @(lambda) specificSurface(lambda, 2, fineData, nElc, nElf);
+phi{end + 1} = mps;
 nBasis = numel(phi);
