@@ -26,7 +26,7 @@ theta_cf.WTSinv = theta_cf.W'*theta_cf.Sinv;
 theta_cf.mu = zeros(domainf.nNodes, 1);
 % theta_c.theta = (1/size(phi, 1))*ones(size(phi, 1), 1);
 % theta_c.theta = (1/nBasis)*ones(nBasis, 1);
-theta_c.theta = zeros(nBasis, 1);
+theta_c.theta = 0*cos(pi*(1:nBasis)');
 % theta_c.theta(end) = 1;
 % theta_c.theta = 0;
 theta_c.sigma = .1;
@@ -36,8 +36,8 @@ theta_c.sigma = .1;
 theta_prior_type = 'hierarchical_gamma';                  %hierarchical_gamma, hierarchical_laplace, laplace, gaussian or none
 sigma_prior_type = 'exponential_sigma';
 %prior hyperparams; obsolete for no prior
-theta_prior_hyperparam = [0, 1e-8];                   %a and b params for Gamma hyperprior
-sigma_prior_hyperparam = 1e7;
+theta_prior_hyperparam = [0, 1e-10];                   %a and b params for Gamma hyperprior
+sigma_prior_hyperparam = 1e5;
 
 %% MCMC options
 MCMC.method = 'MALA';                                %proposal type: randomWalk, nonlocal or MALA

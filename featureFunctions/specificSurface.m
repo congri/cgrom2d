@@ -16,7 +16,7 @@ dy = (S1 - S0)/l_pixel_y;
 
 %is this correct?
 dr = .5*dx + .5*dy;
-s = -pi*dr;     %Torquato 2.36 for 2D
+s = -4*dr;     %Torquato 12.12 for 2D
 
 end
 

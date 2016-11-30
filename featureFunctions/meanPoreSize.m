@@ -1,8 +1,16 @@
-function [m] = meanPoreSize(lambda, phase, fineData, nElc, nElf)
+function [out] = meanPoreSize(lambda, phase, fineData, nElc, nElf, meanOrVar)
 %Computes mean pore size density
 [p_delta_x, p_delta] = poreSizeDensity(lambda, phase, fineData, nElc, nElf);
 
-m = p_delta_x'*p_delta;
+m = p_delta_x'*p_delta;             %mean
+if strcmp(meanOrVar, 'mean')
+    out = m;
+elseif strcmp(meanOrVar, 'var')
+    out = (p_delta_x.^2)'*p_delta - m^2;  %variance
+else
+    error('Mean pore size or variance of pore size?')
+end
+
 
 end
 

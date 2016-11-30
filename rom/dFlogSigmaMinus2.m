@@ -10,12 +10,17 @@ else
     [~, dlogprior_dsigmaMinus2, d2logprior_dsigmaMinus22] = log_prior_sigma((1/sigmaMinus2), prior_type, prior_param);
 end
 
-dF_dsigmaMinus2 = .5*nCoarse*nTrain/sigmaMinus2 - .5*(sum(XNormSqMean) - 2*theta'*sumPhiTXmean...
+% dF_dsigmaMinus2 = .5*nCoarse*nTrain/sigmaMinus2 - .5*(sum(XNormSqMean) - 2*theta'*sumPhiTXmean...
+%         + theta'*sumPhiSq*theta) + dlogprior_dsigmaMinus2;
+dF_dsigmaMinus2 = .5*nCoarse/sigmaMinus2 - (1/(2*nTrain))*(sum(XNormSqMean) - 2*theta'*sumPhiTXmean...
         + theta'*sumPhiSq*theta) + dlogprior_dsigmaMinus2;
-d2F_dsigmaMinus22 = -.5*nCoarse*nTrain/(sigmaMinus2^2) + d2logprior_dsigmaMinus22;
+% d2F_dsigmaMinus22 = -.5*nCoarse*nTrain/(sigmaMinus2^2) + d2logprior_dsigmaMinus22;
+d2F_dsigmaMinus22 = -.5*nCoarse/(sigmaMinus2^2) + d2logprior_dsigmaMinus22;
 
 dF_dlogSigmaMinus2 = sigmaMinus2*dF_dsigmaMinus2;
-d2F_dlogSigmaMinus22 = dF_dlogSigmaMinus2 + sigmaMinus2*d2F_dsigmaMinus22;
+% d2F_dlogSigmaMinus22 = dF_dlogSigmaMinus2 + sigmaMinus2*d2F_dsigmaMinus22;
+d2F_dlogSigmaMinus22 = dF_dlogSigmaMinus2 + (sigmaMinus2^2)*d2F_dsigmaMinus22;
+
 
 end
 
