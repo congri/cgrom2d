@@ -23,7 +23,7 @@ elseif strcmp(fineData.dist, 'correlated_binary')
     clear y;
     x = [X(:) Y(:)]';
     clear X Y;
-    nBochnerBasis = 1e3;
+    nBochnerBasis = 1e3;    %Number of cosine basis functions
     parPoolInit();
     cond{1} = zeros(domain.nEl, 1);
     cond = repmat(cond, 1, (fineData.nSamples + fineData.nTest));

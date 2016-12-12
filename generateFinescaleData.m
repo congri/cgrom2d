@@ -36,11 +36,16 @@ elseif (strcmp(fineData.dist, 'uniform') || strcmp(fineData.dist, 'binary')...
     contrast = fineData.up/fineData.lo;
     %for binary
     if (strcmp(fineData.dist, 'binary') || strcmp(fineData.dist, 'correlated_binary'))
-        fineData.p_lo = .5;  %this controls volume fraction
+        fineData.theoreticalVolumeFraction = .3; %Volume fraction of high conductivity phase
         if strcmp(fineData.dist, 'correlated_binary')
             fineData.lx = 10*domainf.lElX;
             fineData.ly = 10*domainf.lElY;
             fineData.sigma_f2 = 1; %GP variance parameter. Has this parameter any impact?
+            fineData.p_lo = norminv(1 - fineData.theoreticalVolumeFraction, 0, fineData.sigma_f2);
+        elseif strcmp(fineData.dist, 'binary')
+            fineData.p_lo = fineData.theoreticalVolumeFraction;
+        else
+            error('Unknown conductivity field distribution')
         end
     end
 else
@@ -63,19 +68,24 @@ clear condAll;
 
 %% Save data
 %Name of training data file
-trainFileName = strcat('train_', 'nf=', num2str(nf), '_locond=', num2str(fineData.lo),...
-    '_hicond=', num2str(fineData.up), '_samples=', num2str(fineData.nSamples),...
-    '_corrlength=', num2str(fineData.lx/domainf.lElX), '_volfrac=', num2str(fineData.p_lo), '.mat');
+trainFileName = strcat('set1-samples=', num2str(fineData.nSamples), '.mat');
 %Name of test data file
-testFileName = strcat('test_', 'nf=', num2str(nf), '_locond=', num2str(fineData.lo),...
-    '_hicond=', num2str(fineData.up), '_samples=', num2str(fineData.nSamples),...
-    '_corrlength=', num2str(fineData.lx/domainf.lElX), '_volfrac=', num2str(fineData.p_lo), '.mat');
+testFileName = strcat('set2-samples=', num2str(fineData.nTest), '.mat');
 %Name of parameter file
-paramFileName = strcat('param_', 'nf=', num2str(nf), '_locond=', num2str(fineData.lo),...
-    '_hicond=', num2str(fineData.up), '_samples=', num2str(fineData.nSamples),...
-    '_corrlength=', num2str(fineData.lx/domainf.lElX), '_volfrac=', num2str(fineData.p_lo), '.mat');
+paramFileName = strcat('params','.mat');
 %Folder where finescale data is saved
 fineDataPath = '/home/constantin/matlab/data/fineData/';
+%System size
+fineDataPath = strcat(fineDataPath, 'systemSize=', num2str(domainf.nElX), 'x', num2str(domainf.nElY), '/');
+%Type of conductivity distribution
+fineDataPath = strcat(fineDataPath, fineData.dist, '/', 'IsoSEcov/', 'l=',...
+    num2str(fineData.lx/domainf.lElX), '_sigmafSq=', num2str(fineData.sigma_f2), '/volumeFraction=',...
+    num2str(fineData.theoreticalVolumeFraction), '/', 'locond=', num2str(fineData.lo),...
+    '_hicond=', num2str(fineData.up), '/', 'BCcoeffs=', mat2str(boundaryCoeffs), '/');
+
+if ~exist(fineDataPath, 'dir')
+    mkdir(fineDataPath);
+end
 
 disp('Finescale data generated. Saving and quitting...')
 %Directly save to disc and load where needed. This saves memory.
@@ -86,7 +96,7 @@ Tf = TfTest;
 save(strcat(fineDataPath, testFileName), 'cond', 'Tf', '-v7.3')     %partial loading only for -v7.3
 
 %save params
-save(strcat(fineDataPath, paramFileName), 'domainf', 'fineData', 'Tb', 'qb', 'nf');
+save(strcat(fineDataPath, paramFileName), 'domainf', 'fineData', 'boundaryCoeffs', 'Tb', 'qb', 'nf');
 time_for_data_generation = toc
 
 end

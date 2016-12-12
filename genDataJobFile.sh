@@ -1,10 +1,10 @@
 NF=512
 CORRLENGTH=20
 NTRAIN=1024
-NTEST=128
-VOLFRAC=-0.8	#This controls vol. fraction. 50/50 for VOLFRAC=0
+NTEST=256
+VOLFRAC=0.3	#Theoretical volume fraction
 LOCOND=1
-HICOND=10000
+HICOND=100
 
 #Set up file paths
 PROJECTDIR="/home/constantin/matlab/projects/cgrom2d"
@@ -14,6 +14,8 @@ JOBDIR="/home/constantin/matlab/data/$JOBNAME"
 #Create job directory and copy source code
 mkdir $JOBDIR
 cp -r $PROJECTDIR/* $JOBDIR
+#Remove existing data folder - we generate new data
+rm -r $PROJECTDIR/data
 #Change directory to job directory; completely independent from project directory
 cd $JOBDIR
 rm job_file.sh
@@ -36,7 +38,7 @@ sed -i \"42s/.*/            fineData.ly = $CORRLENGTH*domainf.lElY;/\" ./generat
 sed -i \"15s/.*/nf = $NF;       %%Should be 2^n/\" ./generateFinescaleData.m
 sed -i \"26s/.*/fineData.nSamples = $NTRAIN;/\" ./generateFinescaleData.m
 sed -i \"27s/.*/fineData.nTest = $NTEST;/\" ./generateFinescaleData.m
-sed -i \"39s/.*/        fineData.p_lo = $VOLFRAC;  %%this controls volume fraction/\" ./generateFinescaleData.m
+sed -i \"39s/.*/        fineData.theoreticalVolumeFraction = $VOLFRAC; %%Volume fraction of high conductivity phase/\" ./generateFinescaleData.m
 
 #Run Matlab
 /home/constantin/Software/matlab2016b/bin/matlab -nodesktop -nodisplay -nosplash -r \"generateFinescaleData ; quit;\"" >> job_file.sh

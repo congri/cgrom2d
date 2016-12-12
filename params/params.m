@@ -2,7 +2,7 @@
 %CHANGE JOBFILE IF YOU CHANGE LINE NUMBERS!
 %Number of training data samples
 nStart = 1; %start training sample in training data file
-nTrain = 96;
+nTrain = 16;
 dt = datestr(now, 'mmddHHMMSS')
 jobname = 'trainModel_nTrain16contrast100'
 

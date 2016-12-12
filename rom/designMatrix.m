@@ -33,8 +33,13 @@ for i = 1:size(cond, 1)
     PhiArray(:, :, i) = PhiCell{i};
 end
 
-%We normalize every column of first Phi s.t. priors on theta act on each feature equally
-colNormPhi = columnnorm(PhiArray(:, :, 1));
+%We normalize every column of Phi w.r.t. mean norm of phi(x_k) s.t. priors on theta act on each feature equally
+colNormPhi = 0;
+for i = 1:size(PhiArray, 3)
+    colNormPhi = colNormPhi + columnnorm(PhiArray(:, :, i));
+end
+colNormPhi = colNormPhi/size(PhiArray, 3);
+
 for i = 1:size(PhiArray, 2)
     for j = 1:size(PhiArray, 3)
         PhiArray(:, i, j) = PhiArray(:, i, j)/colNormPhi(:, i);

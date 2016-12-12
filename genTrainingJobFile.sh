@@ -11,6 +11,8 @@ JOBDIR="/home/constantin/matlab/data/$DATESTR$JOBNAME"
 #Create job directory and copy source code
 mkdir $JOBDIR
 cp -r $PROJECTDIR/* $JOBDIR
+#Remove existing data folder
+rm -r $PROJECTDIR/data
 #Change directory to job directory; completely independent from project directory
 cd $JOBDIR
 rm job_file.sh
