@@ -1,4 +1,4 @@
-function [curr_x, grad, Hess, nIter] = newtonRaphsonMaximization(objective, startValue, Xtol, provide_objective, stepSize, debug)
+function [curr_x, grad, Hess, nIter] = newtonRaphsonMaximization(objective, startValue, normGradient, provide_objective, stepSize, debug)
 %Maximization based on the well-known Newton-Raphson method
 %%Input:
 %   objective:              func. handle with [grad., Hess., obj.] as output
@@ -6,7 +6,7 @@ function [curr_x, grad, Hess, nIter] = newtonRaphsonMaximization(objective, star
 %   Xtol:                   Tolerance in x for convergence
 
 %step size parameter, 0 < gamma < 1
-RMfac2 = (1e-5)*ones(length(startValue), 1);
+RMfac2 = (1e-3)*ones(length(startValue), 1);
 
 %%Optimization
 converged = false;
@@ -19,7 +19,34 @@ end
 if(debug)
     gradArray = grad;
 end
-step = Hess\grad;
+if(~all(all(isfinite(Hess))) || any(eig(Hess) >= 0))
+%     warning('Hessian not finite/negative definite, do Robbins-Monro instead')
+    RMoff = 100;
+    RMfac1 = RMoff/(RMoff);
+    signChange = grad.*grad;
+    signChange = (signChange < 0);
+    for j = 1:length(grad)
+        if(signChange(j))
+            %decrease stepsize when gradient sign changes
+            RMfac2(j) = .01*RMfac2(j);
+        else
+            %increase step size when gradient sign does not change
+            RMfac2(j) = 1.2*RMfac2(j);
+        end
+    end
+    RMstep = RMfac1*RMfac2;
+    step = - norm(curr_x)*(RMstep.*(grad/norm(grad)));
+elseif(rcond(Hess) < eps)
+    %Find least squares solution
+%     warning('Hessian badly conditioned')
+    [step, ~] = linsolve(Hess, grad);
+else
+    %Regular Hessian, no problem
+    step = Hess\grad;
+end
+if(~all(isfinite(step)))
+    step = ones(size(grad));
+end
 nIter = 1;
 %Iterate until convergence
 while(~converged)
@@ -46,7 +73,7 @@ while(~converged)
     end
     
     %check for convergence
-    if(norm(curr_x - old_x)/norm(curr_x) < Xtol)
+    if(norm(grad)/length(grad) < normGradient || nIter > 10000)
         converged = true;
     else    %if not converged, compute next step
         if(~provide_objective)
@@ -54,7 +81,7 @@ while(~converged)
             [grad, Hess] = objective(curr_x);
             %check for negative definiteness
             if(~all(all(isfinite(Hess))) || any(eig(Hess) >= 0))
-%                 warning('Hessian not negative definite, do Robbins-Monro instead')
+%                 warning('Hessian not finite/negative definite, do Robbins-Monro instead')
                 RMoff = 100;
                 RMfac1 = RMoff/(RMoff + nIter);
                 signChange = grad_old.*grad;
@@ -62,16 +89,24 @@ while(~converged)
                 for j = 1:length(grad)
                    if(signChange(j))
                        %decrease stepsize when gradient sign changes
-                       RMfac2(j) = .9*RMfac2(j); 
+                       RMfac2(j) = .01*RMfac2(j); 
                    else
                        %increase step size when gradient sign does not change
-                       RMfac2(j) = 1.1*RMfac2(j);
+                       RMfac2(j) = 1.2*RMfac2(j);
                    end
                 end
                 RMstep = RMfac1*RMfac2;
                 step = - norm(curr_x)*(RMstep.*(grad/norm(grad)));
+            elseif(rcond(Hess) < eps)
+                %Find least squares solution
+%                 warning('Hessian badly conditioned')
+                [step, ~] = linsolve(Hess, grad);
             else
+                %Regular Hessian, no problem
                 step = Hess\grad;
+            end
+            if(~all(isfinite(step)))
+                step = ones(size(grad));
             end
             nIter = nIter + 1;
         end
@@ -81,17 +116,20 @@ while(~converged)
             Hess
             invHess = inv(Hess)
             step
-            gradArray = [gradArray, grad];
-            plot(gradArray')
-            xlim([1 nIter + 5])
-            drawnow
+            
+            if(mod(nIter, 20) == 0)
+                gradArray = [gradArray, grad];
+                plot(gradArray')
+                xlim([1 nIter/20 + 5])
+                drawnow
+            end
             if(mod(nIter, 500) == 0)
                 pause
             end
         end
         
-        if mod(nIter, 20) == 0
-            stepSize = .9*stepSize;
+        if mod(nIter, 100) == 0
+            stepSize = .99*stepSize;
         end
     end
 end

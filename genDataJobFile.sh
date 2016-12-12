@@ -1,10 +1,10 @@
 NF=512
 CORRLENGTH=20
-NTRAIN=96
-NTEST=0
-VOLFRAC=0.5	#This controls vol. fraction. 50/50 for VOLFRAC=0
+NTRAIN=1024
+NTEST=128
+VOLFRAC=-0.8	#This controls vol. fraction. 50/50 for VOLFRAC=0
 LOCOND=1
-HICOND=100
+HICOND=10000
 
 #Set up file paths
 PROJECTDIR="/home/constantin/matlab/projects/cgrom2d"

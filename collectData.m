@@ -3,23 +3,30 @@
 if ~exist('./data/', 'dir')
     mkdir('./data/');
 end
+%Remove old data in first step, if there exists some
+if(k == 1)
+    delete('./data/MCMCstepWidth', './data/sigma', './data/S', './data/mu', './data/theta', './data/Wmat')
+end
 
 %% MCMC Step width
-MCMCStepWidth = zeros(1, nTrain);
-filename = './data/MCMCstepWidth';
-for i = 1:nTrain
-    if strcmp(MCMC(i).method, 'MALA')
-        MCMCStepWidth(i) = MCMC(i).MALA.stepWidth;
-    elseif strcmp(MCMC(i).method, 'randomWalk')
-        %only valid for isotropic proposals!
-        MCMCStepWidth(i) = MCMC(i).randomWalk.proposalCov(1, 1);
-    elseif strcmp(MCMC(i).method, 'nonlocal')
-        %do nothing; we don't use this
-    else
-        error('Unknown sampling method')
+saveSW = false;
+if saveSW
+    MCMCStepWidth = zeros(1, nTrain);
+    filename = './data/MCMCstepWidth';
+    for i = 1:nTrain
+        if strcmp(MCMC(i).method, 'MALA')
+            MCMCStepWidth(i) = MCMC(i).MALA.stepWidth;
+        elseif strcmp(MCMC(i).method, 'randomWalk')
+            %only valid for isotropic proposals!
+            MCMCStepWidth(i) = MCMC(i).randomWalk.proposalCov(1, 1);
+        elseif strcmp(MCMC(i).method, 'nonlocal')
+            %do nothing; we don't use this
+        else
+            error('Unknown sampling method')
+        end
     end
+    save(filename, 'MCMCStepWidth', '-ascii', '-append')
 end
-save(filename, 'MCMCStepWidth', '-ascii', '-append')
 
 %% Optimal params
 %W matrix
@@ -34,16 +41,19 @@ if saveW
     else
         save(filename, 'WArray', '-ascii', '-append')
     end
+    clear rowW colW valW WArray;
 end
-clear rowW colW valW WArray;
+
 %theta
 filename = './data/theta';
 theta = theta_c.theta';
 save(filename, 'theta', '-ascii', '-append');
+
 %sigma
 filename = './data/sigma';
 sigma = theta_c.sigma;
 save(filename, 'sigma', '-ascii', '-append');
+
 %S
 saveS = true;
 if saveS

@@ -1,16 +1,27 @@
 %performance tests
 
-a = rand(size(theta_cf.W, 1), 1);
-nRuns = 10000;
-tic
-for i = 1:nRuns
-    b = theta_cf.W'*a;
-end
-t1 = toc
+clear Tf;
 
+%load first Tf
 tic
-WT = theta_cf.W';
-for i = 1:nRuns
-    b = WT*a;
-end
-t2 = toc
+Tf = Tffile.Tf(:,1);
+toc
+clear Tf;
+
+%load last Tf
+tic
+Tf = Tffile.Tf(:,1024);
+toc
+clear Tf;
+
+%load 10 Tf's
+tic
+Tf = Tffile.Tf(:, 134:144);
+toc
+clear Tf;
+
+%load all Tf's
+tic
+Tf = Tffile.Tf;
+toc
+clear Tf;

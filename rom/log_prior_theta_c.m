@@ -4,7 +4,7 @@ function [log_p, d_log_p, d2_log_p] = log_prior_theta_c(theta_c, theta_c_old, pr
 % mode gives the functional form of the prior
 
 dim = size(theta_c, 1);
-offset = 1e-8;
+offset = 1e-10;
 if strcmp(prior_type, 'gaussian')
     
     %Gaussian prior
@@ -49,10 +49,10 @@ elseif strcmp(prior_type, 'laplace')
     
 elseif strcmp(prior_type, 'hierarchical_laplace')
     
-    log_p = - prior_hyperparam*sum((theta_c.^2)./(abs(theta_c_old) + offset));
-    d_log_p = - 2*prior_hyperparam*theta_c./(abs(theta_c_old) + offset);
+    log_p = - prior_hyperparam(1)*sum((theta_c.^2)./(abs(theta_c_old) + offset));
+    d_log_p = - 2*prior_hyperparam(1)*theta_c./(abs(theta_c_old) + offset);
     if nargout > 2
-       d2_log_p = - 2*prior_hyperparam*diag(1./(abs(theta_c_old) + offset));
+       d2_log_p = - 2*prior_hyperparam(1)*diag(1./(abs(theta_c_old) + offset));
     end
     
 elseif strcmp(prior_type, 'hierarchical_gamma')

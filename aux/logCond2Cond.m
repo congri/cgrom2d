@@ -1,7 +1,7 @@
-function [lambda] = logCond2Cond(x, lowerBound, upperBound)
+function [lambda] = logCond2Cond(X, lowerBound, upperBound)
 %Converts log conductivity field X to conductivity field lambda
 
-lambda = exp(x);
+lambda = exp(X);
 if any(lambda < lowerBound)
     %lower bound on conductivity for stability
     lambda(lambda < lowerBound) = lowerBound;

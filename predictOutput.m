@@ -1,4 +1,5 @@
-function [Tf_meanArray, Tf_varArray, meanMahaErr, meanSqDist] = predictOutput(nSamples_p_c, testSample_lo, testSample_up, testFileName, modelParamsFolder, compMahalanobis)
+function [Tf_meanArray, Tf_varArray, Tf_mean_tot, Tf_sq_mean_tot, meanMahaErr, meanSqDist] =...
+    predictOutput(nSamples_p_c, testSample_lo, testSample_up, testFileName, modelParamsFolder)
 %Function to predict finescale output from generative model
 
 %Load test file
@@ -27,6 +28,9 @@ meanMahaErr = 0;
 meanSqDist = 0;
 Tf_meanArray = zeros(domainf.nNodes, size(PhiArray, 3));
 Tf_varArray = Tf_meanArray;
+%over all training data samples
+Tf_mean_tot = zeros(domainf.nNodes, 1);
+Tf_sq_mean_tot = zeros(domainf.nNodes, 1);
 for j = 1:size(PhiArray, 3)
     Tc = zeros(domainc.nNodes, nSamples_p_c);
     Tf_mean = zeros(domainf.nNodes, 1);
@@ -46,7 +50,9 @@ for j = 1:size(PhiArray, 3)
         %Sequentially compute mean and <Tf^2> to save memory
         Tf_temp = normrnd(mu_cf, theta_cf.S);
         Tf_mean = ((i - 1)/i)*Tf_mean + (1/i)*Tf_temp;
+        Tf_mean_tot = ((i - 1)/i)*Tf_mean_tot + (1/i)*Tf_temp;
         Tf_sq_mean = ((i - 1)/i)*Tf_sq_mean + (1/i)*(Tf_temp.^2);
+        Tf_sq_mean_tot = ((i - 1)/i)*Tf_sq_mean_tot + (1/i)*(Tf_temp.^2);
     end
     disp('done')
     Tf_var = Tf_sq_mean - Tf_mean.^2;
@@ -54,13 +60,13 @@ for j = 1:size(PhiArray, 3)
     Tf_varArray(:, j) = Tf_var;
     pure_prediction_time = toc
     
-    if compMahalanobis
+    if nargout > 4
         Tf = Tffile.Tf(:, testSample_lo + j - 1);
         meanMahaErrTemp = mean(sqrt((.5./(Tf_var)).*(Tf - Tf_mean).^2));
         meanSqDistTemp = mean(((Tf - Tf_mean)./Tf).^2);
+        meanMahaErr = ((j- 1)/j)*meanMahaErr + (1/j)*meanMahaErrTemp;
+        meanSqDist = ((j - 1)/j)*meanSqDist + (1/j)*meanSqDistTemp;
     end
-    meanMahaErr = ((j- 1)/j)*meanMahaErr + (1/j)*meanMahaErrTemp;
-    meanSqDist = ((j - 1)/j)*meanSqDist + (1/j)*meanSqDistTemp;
 end
 rmpath('./rom')
 rmpath('./heatFEM')

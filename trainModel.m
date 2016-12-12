@@ -24,8 +24,13 @@ params;
 
 %Open parallel pool
 parPoolInit(nTrain);
+ppool = gcp;    %parallel pool properties
+pend = 0;       %for sequential qi-updates
+%initializations
+XMean = zeros(domainc.nEl, nTrain);
+XNormSqMean = zeros(1, nTrain);
 
-Tf = Tffile.Tf(:, 1:nTrain);        %Finescale temperatures - load partially to save memory
+Tf = Tffile.Tf(:, nStart:(nStart + nTrain - 1));        %Finescale temperatures - load partially to save memory
 
 % Compute design matrix for each data point
 PhiArray = designMatrix(phi, domainf, domainc, Tffile, 1, nTrain);
@@ -57,6 +62,24 @@ for k = 2:(maxIterations + 1)
     
     MonteCarlo = false;
     VI = true;
+    
+    
+    if strcmp(update_qi, 'sequential')
+        pstart = pend + 1;
+        if pstart > nTrain
+            pstart = 1;
+        end
+        pend = pstart + ppool.NumWorkers - 1;
+        if pend > nTrain
+            pend = nTrain;
+        end
+    else
+        pstart = 1;
+        pend = nTrain;
+    end
+    
+    
+    
     if MonteCarlo
         %% Test run for step sizes
         disp('test sampling...')
@@ -143,7 +166,8 @@ for k = 2:(maxIterations + 1)
         clear Tc_samples;
     elseif VI
         disp('Finding optimal variational distributions...')
-        parfor i = 1:nTrain
+                
+        parfor i = pstart:pend
             [optVarDist{i}, RMsteps{i}] = variationalInference(log_qi{i}, VIparams, initialParamsArray{i});
             initialParamsArray{i} = optVarDist{i}.params;
             if(strcmp(VIparams.family, 'diagonalGaussian'))
@@ -154,12 +178,12 @@ for k = 2:(maxIterations + 1)
             end
         end
         %Set start values for next iteration
-        for i = 1:nTrain
+        for i = pstart:pend
             VIparams.initialParams{i} = optVarDist{i}.params;
         end
         disp('done')
         %Sample from VI distributions and solve coarse model
-        for i = 1:nTrain
+        for i = pstart:pend
             Tf_i_minus_mu = Tf(:, i) - theta_cf.mu;
             if(strcmp(VIparams.family, 'diagonalGaussian'))
                 VImean = optVarDist{i}.params(1:domainc.nEl);
@@ -202,7 +226,7 @@ for k = 2:(maxIterations + 1)
     %sum_i Phi_i^T <X^i>_qi
     sumPhiTXmean = zeros(numel(phi), 1);
     for i = 1:nTrain
-        sumPhiTXmean = sumPhiTXmean + PhiArray(:,:,i)'*XMean(:,i);
+        sumPhiTXmean = sumPhiTXmean + PhiArray(:,:,i)'*XMean(:, i);
     end
 
     sigma_old = theta_c.sigma;
@@ -211,7 +235,7 @@ for k = 2:(maxIterations + 1)
         sigma_prior_type, sigma_prior_hyperparam);
     theta_c.sigma = (1 - mix_sigma)*theta_c.sigma + mix_sigma*sigma_old;
     disp('M-step done, current params:')
-    curr_theta = theta_c.theta
+    curr_theta = [theta_c.theta (1:length(theta_c.theta))']
     curr_sigma = theta_c.sigma
     mean_S = mean(theta_cf.S)
     Lambda_eff1_mean = exp(PhiArray(:, :, 1)*theta_c.theta)

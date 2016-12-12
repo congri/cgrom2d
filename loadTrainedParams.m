@@ -4,6 +4,7 @@ function [theta_c, theta_cf, domainc, domainf, phi] = loadTrainedParams(datafold
 %           datafolder:     folder of optimal training params
 
 addpath('./params')
+addpath('./featureFunctions')
 
 %Load optimal params from job data
 disp('Loading optimal parameters...')
@@ -20,6 +21,7 @@ disp('done')
 
 disp('Loading fine and coarse domain objects...')
 loadTrainingData; %Contains domainf
+
 if exist(strcat('./data/', datafolder, '/domainc.mat'), 'file')
     load(strcat('./data/', datafolder, '/domainc.mat'));
 else
@@ -37,7 +39,6 @@ addpath('./rom')
 genBasisFunctions;
 disp('done')
 rmpath('./rom')
-rmpath('./params')
 
 end
 
