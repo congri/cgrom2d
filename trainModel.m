@@ -33,7 +33,12 @@ XNormSqMean = zeros(1, nTrain);
 Tf = Tffile.Tf(:, nStart:(nStart + nTrain - 1));        %Finescale temperatures - load partially to save memory
 
 % Compute design matrix for each data point
-PhiArray = designMatrix(phi, domainf, domainc, Tffile, 1, nTrain);
+[PhiArray, colNormPhi] = designMatrix(phi, domainf, domainc, Tffile, 1, nTrain);
+%Normalize design matrix s.t. every feature function has output on the same scale
+PhiArray = normalizeDesignMatrix(PhiArray, colNormPhi);
+%colNormPhi is important for normalization of the test dataset in predictions
+save('./data/colNormPhi', 'colNormPhi', '-ascii');
+
 assert(all(all(all(isfinite(PhiArray)))), 'Error: non-finite design matrix Phi')
 % Compute sum_i Phi^T(x_i)^Phi(x_i)
 sumPhiSq = zeros(numel(phi), numel(phi));

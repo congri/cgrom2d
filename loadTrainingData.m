@@ -4,7 +4,7 @@
 nf = 512;
 fineData.lo = 1;
 fineData.up = 100;
-nSamples = 16;
+nSamples = 1024;
 corrlength = '20';
 volfrac = '0.3';  %high conducting phase volume fraction
 sigma_f2 = '1';

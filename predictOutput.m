@@ -1,14 +1,20 @@
-function [Tf_meanArray, Tf_varArray, Tf_mean_tot, Tf_sq_mean_tot, meanMahaErr, meanSqDist] =...
-    predictOutput(nSamples_p_c, testSample_lo, testSample_up, testFileName, modelParamsFolder)
+function [Tf_meanArray, Tf_varArray, Tf_mean_tot, Tf_sq_mean_tot, meanMahaErr, meanSqDist, sqDist] =...
+    predictOutput(nSamples_p_c, testSample_lo, testSample_up, testFilePath, modelParamsFolder)
 %Function to predict finescale output from generative model
 
 %Load test file
-Tffile = matfile(strcat('~/matlab/data/fineData/', testFileName));
-[theta_c, theta_cf, domainc, domainf, phi] = loadTrainedParams(modelParamsFolder);
+Tffile = matfile(testFilePath);
+if nargout > 4
+    Tf = Tffile.Tf(:, testSample_lo:testSample_up);
+end
+[theta_c, theta_cf, domainc, domainf, phi, colNormPhi] = loadTrainedParams(modelParamsFolder);
 
 addpath('./rom')
 %design Matrix for p_c
 PhiArray = designMatrix(phi, domainf, domainc, Tffile, testSample_lo, testSample_up);
+
+%Normalize PhiArray with column norm of TRAINING data
+PhiArray = normalizeDesignMatrix(PhiArray, colNormPhi);
 
 tic;
 %% Sample from p_c
@@ -26,6 +32,7 @@ disp('Solving coarse model and sample from p_cf...')
 addpath('./heatFEM')
 meanMahaErr = 0;
 meanSqDist = 0;
+sqDist = 0;
 Tf_meanArray = zeros(domainf.nNodes, size(PhiArray, 3));
 Tf_varArray = Tf_meanArray;
 %over all training data samples
@@ -38,7 +45,7 @@ for j = 1:size(PhiArray, 3)
     for i = 1:nSamples_p_c
         D = zeros(2, 2, domainc.nEl);
         for e = 1:domainc.nEl
-            D(:, :, e) = LambdaSamples(e, i)*eye(2);
+            D(:, :, e) = LambdaSamples(e, i, j)*eye(2);
         end
         FEMout = heat2d(domainc, D);
         Tctemp = FEMout.Tff';
@@ -61,11 +68,12 @@ for j = 1:size(PhiArray, 3)
     pure_prediction_time = toc
     
     if nargout > 4
-        Tf = Tffile.Tf(:, testSample_lo + j - 1);
-        meanMahaErrTemp = mean(sqrt((.5./(Tf_var)).*(Tf - Tf_mean).^2));
-        meanSqDistTemp = mean(((Tf - Tf_mean)./Tf).^2);
+        meanMahaErrTemp = mean(sqrt((.5./(Tf_var)).*(Tf(:, j) - Tf_mean).^2));
+        meanSqDistTemp = mean(((Tf(:, j) - Tf_mean)./Tf(:, j)).^2);
+        sqDistTemp = (Tf(:, j) - Tf_mean).^2;
         meanMahaErr = ((j- 1)/j)*meanMahaErr + (1/j)*meanMahaErrTemp;
         meanSqDist = ((j - 1)/j)*meanSqDist + (1/j)*meanSqDistTemp;
+        sqDist = ((j - 1)/j)*sqDist + (1/j)*sqDistTemp;
     end
 end
 rmpath('./rom')

@@ -2,7 +2,7 @@
 %CHANGE JOBFILE IF YOU CHANGE LINE NUMBERS!
 %Number of training data samples
 nStart = 1; %start training sample in training data file
-nTrain = 16;
+nTrain = 1;
 dt = datestr(now, 'mmddHHMMSS')
 jobname = 'trainModel_nTrain16contrast100'
 
@@ -14,7 +14,7 @@ genBasisFunctions;
 
 %% EM params
 basisFunctionUpdates = 0;
-basisUpdateGap = 80;
+basisUpdateGap = 50*ceil(nTrain/16);
 maxIterations = (basisFunctionUpdates + 1)*basisUpdateGap - 1;
 
 %% Start value of model parameters

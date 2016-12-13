@@ -1,4 +1,4 @@
-function [PhiArray] = designMatrix(phi, domainf, domainc, Tffile, nTrain_lo, nTrain_up)
+function [PhiArray, colNormPhi] = designMatrix(phi, domainf, domainc, Tffile, nTrain_lo, nTrain_up, colNormPhi)
 %Construct design matrix Phi from basis functions phi and input conductivity data x.
 
 tic
@@ -12,6 +12,8 @@ cond = Tffile.cond(nTrain_lo:nTrain_up, :);        %Finescale conductivities - l
 PhiArray = zeros(domainc.nEl, numel(phi), size(cond, 1));
 nElc = domainc.nEl;
 nElf = domainf.nEl;     %avoiding communication overhead
+%Open parallel pool
+parPoolInit(nTrain_up - nTrain_lo + 1);
 parfor s = 1:size(cond, 1)
     %inputs belonging to same coarse element are in the same column of xk. They are ordered in
     %x-direction.
@@ -33,17 +35,13 @@ for i = 1:size(cond, 1)
     PhiArray(:, :, i) = PhiCell{i};
 end
 
-%We normalize every column of Phi w.r.t. mean norm of phi(x_k) s.t. priors on theta act on each feature equally
-colNormPhi = 0;
-for i = 1:size(PhiArray, 3)
-    colNormPhi = colNormPhi + columnnorm(PhiArray(:, :, i));
-end
-colNormPhi = colNormPhi/size(PhiArray, 3);
-
-for i = 1:size(PhiArray, 2)
-    for j = 1:size(PhiArray, 3)
-        PhiArray(:, i, j) = PhiArray(:, i, j)/colNormPhi(:, i);
+if nargin < 7
+    %We normalize every column of Phi w.r.t. mean norm of phi(x_k) s.t. priors on theta act on each feature equally
+    colNormPhi = 0;
+    for i = 1:size(PhiArray, 3)
+        colNormPhi = colNormPhi + columnnorm(PhiArray(:, :, i));
     end
+    colNormPhi = colNormPhi/size(PhiArray, 3);
 end
 
 disp('done')

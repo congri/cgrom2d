@@ -1,4 +1,4 @@
-function [theta_c, theta_cf, domainc, domainf, phi] = loadTrainedParams(datafolder)
+function [theta_c, theta_cf, domainc, domainf, phi, colNormPhi] = loadTrainedParams(datafolder)
 %Load trained model parameters to workspace
 %   Input:
 %           datafolder:     folder of optimal training params
@@ -17,6 +17,10 @@ W = dlmread(strcat('./data/', datafolder, '/Wmat'));
 W = reshape(W, length(W)/3, 3);
 theta_cf.W = sparse(W(:, 1), W(:, 2), W(:, 3));
 theta_cf.mu = dlmread(strcat('./data/', datafolder, '/mu'));
+disp('done')
+
+disp('Loading column norms of Phi of training data...')
+colNormPhi = dlmread(strcat('./data/', datafolder, '/colNormPhi'));
 disp('done')
 
 disp('Loading fine and coarse domain objects...')
