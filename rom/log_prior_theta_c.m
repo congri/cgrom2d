@@ -10,9 +10,10 @@ if strcmp(prior_type, 'gaussian')
     %Gaussian prior
     %hyperparameters
     mu = 0*theta_c;
-    Sigma = prior_hyperparam;
+    Sigma = prior_hyperparam*eye(length(theta_c));
     
-    log_p = -.5*dim*log(2*pi) - .5*logdet(Sigma) - .5*(theta_c - mu)'*(Sigma\(theta_c - mu));
+%     log_p = -.5*dim*log(2*pi) - .5*logdet(Sigma) - .5*(theta_c - mu)'*(Sigma\(theta_c - mu));
+    log_p = NaN;    %We do not compute this as it is not needed to maximize posterior
     d_log_p = - Sigma\(theta_c - mu);
     if nargout > 2
        d2_log_p = - inv(Sigma); 

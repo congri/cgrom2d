@@ -7,14 +7,14 @@ Tffile = matfile(testFilePath);
 if nargout > 4
     Tf = Tffile.Tf(:, testSample_lo:testSample_up);
 end
-[theta_c, theta_cf, domainc, domainf, phi, colNormPhi] = loadTrainedParams(modelParamsFolder);
+[theta_c, theta_cf, domainc, domainf, phi, featureFunctionMean] = loadTrainedParams(modelParamsFolder);
 
 addpath('./rom')
 %design Matrix for p_c
 PhiArray = designMatrix(phi, domainf, domainc, Tffile, testSample_lo, testSample_up);
 
 %Normalize PhiArray with column norm of TRAINING data
-PhiArray = normalizeDesignMatrix(PhiArray, colNormPhi);
+PhiArray = normalizeDesignMatrix(PhiArray, featureFunctionMean);
 
 tic;
 %% Sample from p_c
@@ -25,6 +25,8 @@ for i = 1:size(PhiArray, 3)
     Xsamples(:, :, i) = mvnrnd(PhiArray(:, :, i)*theta_c.theta, (theta_c.sigma^2)*eye(domainc.nEl), nSamples_p_c)';
     LambdaSamples(:, :, i) = exp(Xsamples(:, :, i));
 end
+LambdaSamples(LambdaSamples < 1) = 1;
+LambdaSamples(LambdaSamples > 100) = 100;
 disp('done')
 
 %% Run coarse model and sample from p_cf
@@ -39,7 +41,6 @@ Tf_varArray = Tf_meanArray;
 Tf_mean_tot = zeros(domainf.nNodes, 1);
 Tf_sq_mean_tot = zeros(domainf.nNodes, 1);
 for j = 1:size(PhiArray, 3)
-    Tc = zeros(domainc.nNodes, nSamples_p_c);
     Tf_mean = zeros(domainf.nNodes, 1);
     Tf_sq_mean = zeros(domainf.nNodes, 1);
     for i = 1:nSamples_p_c
@@ -49,10 +50,9 @@ for j = 1:size(PhiArray, 3)
         end
         FEMout = heat2d(domainc, D);
         Tctemp = FEMout.Tff';
-        Tc(:, i) = Tctemp(:);
         
         %sample from p_cf
-        mu_cf = theta_cf.mu + theta_cf.W*Tc(:, i);
+        mu_cf = theta_cf.mu + theta_cf.W*Tctemp(:);
         %only for diagonal S!!
         %Sequentially compute mean and <Tf^2> to save memory
         Tf_temp = normrnd(mu_cf, theta_cf.S);
@@ -62,7 +62,8 @@ for j = 1:size(PhiArray, 3)
         Tf_sq_mean_tot = ((i - 1)/i)*Tf_sq_mean_tot + (1/i)*(Tf_temp.^2);
     end
     disp('done')
-    Tf_var = Tf_sq_mean - Tf_mean.^2;
+    Tf_var = abs(Tf_sq_mean - Tf_mean.^2);  %abs to avoid negative variance due to numerical error
+    meanTf_meanMCErr = mean(sqrt(Tf_var/nSamples_p_c))
     Tf_meanArray(:, j) = Tf_mean;
     Tf_varArray(:, j) = Tf_var;
     pure_prediction_time = toc

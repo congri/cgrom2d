@@ -1,8 +1,7 @@
 function [log_p, d_log_p, data] = log_p_c(Xq, Phi, theta, sigma)
 %Probabilistic mapping from fine to coarse heat conductivity
-%   Xq:         Effective conductivity vector
-%   x:          fine conductivities
-%   phi:        basis functions
+%   Xq:         Effective log conductivity vector
+%   Phi:        Design Matrix
 %   theta:      basis function coefficients
 %   sigma:      noise
 %   nFine:      Number of fine elements

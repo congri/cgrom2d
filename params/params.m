@@ -2,7 +2,7 @@
 %CHANGE JOBFILE IF YOU CHANGE LINE NUMBERS!
 %Number of training data samples
 nStart = 1; %start training sample in training data file
-nTrain = 1;
+nTrain = 16;
 dt = datestr(now, 'mmddHHMMSS')
 jobname = 'trainModel_nTrain16contrast100'
 
@@ -20,7 +20,7 @@ maxIterations = (basisFunctionUpdates + 1)*basisUpdateGap - 1;
 %% Start value of model parameters
 %Shape function interpolate in W
 theta_cf.W = shapeInterp(domainc, domainf);
-theta_cf.S = (1e-6)*ones(domainf.nNodes, 1);
+theta_cf.S = (1e3)*ones(domainf.nNodes, 1);
 theta_cf.Sinv = sparse(1:domainf.nNodes, 1:domainf.nNodes, 1./theta_cf.S);
 %precomputation to save resources
 theta_cf.WTSinv = theta_cf.W'*theta_cf.Sinv;
@@ -32,7 +32,7 @@ d = 10;
 % theta_c.theta = 2*d*rand(nBasis, 1) - d;
 % theta_c.theta(end) = 1;
 % theta_c.theta = 0;
-theta_c.sigma = 1e-1;
+theta_c.sigma = 1e-2;
 
 
 %what kind of prior for theta_c
@@ -50,7 +50,7 @@ MCMC.nThermalization = 0;                            %thermalization steps
 nSamplesBeginning = [40];
 MCMC.nSamples = 40;                                 %number of samples
 MCMC.nGap = 40;                                     %decorrelation gap
-MCMC.Xi_start = 20*ones(domainc.nEl, 1);
+MCMC.Xi_start = log(.5*fineData.lo + .5*fineData.up)*ones(domainc.nEl, 1);
 %only for random walk
 MCMC.MALA.stepWidth = .01;
 stepWidth = 2e-0;
@@ -73,7 +73,7 @@ mix_theta = 0;
 %% Variational inference params
 dim = domainc.nEl;
 VIparams.family = 'diagonalGaussian';
-initialParamsArray{1} = [log(.5*fineData.lo + .5*fineData.up)*ones(1, domainc.nEl) 7*ones(1, domainc.nEl)];
+initialParamsArray{1} = [log(.5*fineData.lo + .5*fineData.up)*ones(1, domainc.nEl) 15*ones(1, domainc.nEl)];
 initialParamsArray = repmat(initialParamsArray, nTrain, 1);
 VIparams.nSamples = 10;    %Gradient samples per iteration
 VIparams.inferenceSamples = 100;

@@ -10,25 +10,9 @@ conductivity = logCond2Cond(Xi, 1e-10, 1e10);
 [lg_p_c, d_lg_p_c] = log_p_c(Xi, Phi, theta_c.theta, theta_c.sigma);
 [lg_p_cf, d_lg_p_cf, Tc] = log_p_cf(Tf_i_minus_mu, domainc, conductivity, theta_cf);
 
-if(~isscalar(lg_p_c))
-    lg_p_c
-end
-assert(isscalar(lg_p_c), 'error: lg_p_c not scalar')
-assert(isscalar(lg_p_cf), 'error: lg_p_cf not scalar')
-
 log_q = lg_p_cf + lg_p_c;
 
 d_log_q = d_lg_p_c + d_lg_p_cf;
-if any(imag(d_log_q))
-    Xi
-    theta_c.theta
-    theta_c.sigma
-    Phi
-    d_log_q
-    d_lg_p_c
-    d_lg_p_cf
-    error('Imaginary gradient')
-end
 
 
 %Finite difference gradient check

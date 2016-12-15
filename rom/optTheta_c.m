@@ -68,6 +68,8 @@ while(~converged)
     sigmaMinus2 = exp(logSigmaMinus2);
     sigma2_old = sigma2;
     sigma2 = 1/sigmaMinus2;
+    
+    
     if sigma2 == 0
         warning('sigma2 == 0. Set it to small finite value')
         sigma2 = 1e-60;

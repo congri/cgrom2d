@@ -1,11 +1,14 @@
-NTRAIN=64
-CONTRAST=100
+NF=512
 CORRLENGTH=20
-NC=4
+NTRAIN=2
+VOLFRAC=0.3	#Theoretical volume fraction
+LOCOND=1
+HICOND=100
+NC=2
 
 DATESTR=`date +%m-%d-%H-%M-%S`	#datestring for jobfolder name
 PROJECTDIR="/home/constantin/matlab/projects/cgrom2d"
-JOBNAME="trainModel_nTrain${NTRAIN}contrast${CONTRAST}spikeAndSlab${NC}x${NC}"
+JOBNAME="trainModel_nTrain=${NTRAIN}_locond=${LOCOND}_hicond=${HICOND}_Nc=${NC}"
 JOBDIR="/home/constantin/matlab/data/$DATESTR$JOBNAME"
 
 #Create job directory and copy source code
@@ -28,9 +31,12 @@ printf "#PBS -N $JOBNAME
 #Switch to job directory
 cd $JOBDIR
 #Set parameters
-sed -i \"4s/.*/nTrain = $NTRAIN;/\" ./params/params.m
-sed -i \"6s/.*/jobname = '$JOBNAME';/\" ./params/params.m
-sed -i \"5s/.*/contrast = $CONTRAST;/\" ./loadTrainingData.m
+sed -i \"5s/.*/nTrain = $NTRAIN;/\" ./params/params.m
+sed -i \"7s/.*/jobname = '$JOBNAME';/\" ./params/params.m
+sed -i \"5s/.*/fineData.lo = $LOCOND;/\" ./loadTrainingData.m
+sed -i \"6s/.*/fineData.up = $HICOND;/\" ./loadTrainingData.m
+sed -i \"8s/.*/corrlength = '${CORRLENGTH}';/\" ./loadTrainingData.m
+sed -i \"9s/.*/volfrac = '$VOLFRAC';  %%high conducting phase volume fraction/\" ./loadTrainingData.m
 sed -i \"2s/.*/nc = $NC;/\" ./params/genCoarseDomain.m
 
 

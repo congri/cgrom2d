@@ -6,8 +6,8 @@ Tftemp = Tffile.Tf(:, 1);
 Tf_true_mean = zeros(size(Tftemp, 1), 1);
 Tf_true_sq_mean = zeros(size(Tftemp, 1), 1);
 % nSamples = size(Tffile.Tf, 2);
-nSamples = 256;
-window = 256;
+nSamples = 1024;
+window = 512;
 nWindows = ceil(nSamples/window);
 tic
 for i = 1:nWindows
