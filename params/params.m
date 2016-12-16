@@ -2,7 +2,7 @@
 %CHANGE JOBFILE IF YOU CHANGE LINE NUMBERS!
 %Number of training data samples
 nStart = 1; %start training sample in training data file
-nTrain = 16;
+nTrain = 48;
 dt = datestr(now, 'mmddHHMMSS')
 jobname = 'trainModel_nTrain16contrast100'
 
@@ -14,13 +14,13 @@ genBasisFunctions;
 
 %% EM params
 basisFunctionUpdates = 0;
-basisUpdateGap = 50*ceil(nTrain/16);
+basisUpdateGap = 80*ceil(nTrain/16);
 maxIterations = (basisFunctionUpdates + 1)*basisUpdateGap - 1;
 
 %% Start value of model parameters
 %Shape function interpolate in W
 theta_cf.W = shapeInterp(domainc, domainf);
-theta_cf.S = (1e3)*ones(domainf.nNodes, 1);
+theta_cf.S = (1e-3)*ones(domainf.nNodes, 1);
 theta_cf.Sinv = sparse(1:domainf.nNodes, 1:domainf.nNodes, 1./theta_cf.S);
 %precomputation to save resources
 theta_cf.WTSinv = theta_cf.W'*theta_cf.Sinv;
