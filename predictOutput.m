@@ -7,22 +7,24 @@ Tffile = matfile(testFilePath);
 if nargout > 4
     Tf = Tffile.Tf(:, testSample_lo:testSample_up);
 end
-[theta_c, theta_cf, domainc, domainf, phi, featureFunctionMean] = loadTrainedParams(modelParamsFolder);
+[theta_c, theta_cf, domainc, domainf, phi, featureFunctionAbsMean] = loadTrainedParams(modelParamsFolder);
 
 addpath('./rom')
-%design Matrix for p_c
-PhiArray = designMatrix(phi, domainf, domainc, Tffile, testSample_lo, testSample_up);
 
-%Normalize PhiArray with column norm of TRAINING data
-PhiArray = normalizeDesignMatrix(PhiArray, featureFunctionMean);
+%% Compute design matrices
+Phi = DesignMatrix([domainf.nElX domainf.nElY], [domainc.nElX domainc.nElY], phi, Tffile, testSample_lo:testSample_up);
+Phi = Phi.computeDesignMatrix(domainc.nEl, domainf.nEl);
+%Normalize design matrices
+Phi = Phi.normalizeDesignMatrix(featureFunctionAbsMean);
 
 tic;
 %% Sample from p_c
 disp('Sampling from p_c...')
-Xsamples = zeros(domainc.nEl, nSamples_p_c, size(PhiArray, 3));
+nTest = testSample_up - testSample_lo + 1;
+Xsamples = zeros(domainc.nEl, nSamples_p_c, nTest);
 LambdaSamples = Xsamples;
-for i = 1:size(PhiArray, 3)
-    Xsamples(:, :, i) = mvnrnd(PhiArray(:, :, i)*theta_c.theta, (theta_c.sigma^2)*eye(domainc.nEl), nSamples_p_c)';
+for i = 1:nTest
+    Xsamples(:, :, i) = mvnrnd(Phi.designMatrices{i}*theta_c.theta, (theta_c.sigma^2)*eye(domainc.nEl), nSamples_p_c)';
     LambdaSamples(:, :, i) = exp(Xsamples(:, :, i));
 end
 LambdaSamples(LambdaSamples < 1) = 1;
@@ -35,12 +37,12 @@ addpath('./heatFEM')
 meanMahaErr = 0;
 meanSqDist = 0;
 sqDist = 0;
-Tf_meanArray = zeros(domainf.nNodes, size(PhiArray, 3));
+Tf_meanArray = zeros(domainf.nNodes, nTest);
 Tf_varArray = Tf_meanArray;
 %over all training data samples
 Tf_mean_tot = zeros(domainf.nNodes, 1);
 Tf_sq_mean_tot = zeros(domainf.nNodes, 1);
-for j = 1:size(PhiArray, 3)
+for j = 1:nTest
     Tf_mean = zeros(domainf.nNodes, 1);
     Tf_sq_mean = zeros(domainf.nNodes, 1);
     for i = 1:nSamples_p_c

@@ -4,8 +4,11 @@ function [] = parPoolInit(N_Threads)
 if(nargin == 0 || N_Threads > 16)
     N_Threads = 16;
 end
-if isempty(gcp('nocreate'))
-    % Create with N_Threads workers
+
+current_pool = gcp('nocreate');
+if(~numel(current_pool) || (current_pool.NumWorkers < N_Threads))
+    %Create with N_Threads workers
+    delete(gcp('nocreate'));
     parpool('local', N_Threads);
 end
 

@@ -1,27 +1,16 @@
 %performance tests
 
-clear Tf;
-
-%load first Tf
+nRuns = 1e6;
+a = 1:1000;
 tic
-Tf = Tffile.Tf(:,1);
+for i = 1:nRuns
+    Tf(a);
+end
 toc
-clear Tf;
 
-%load last Tf
+a = uint32(a);
 tic
-Tf = Tffile.Tf(:,1024);
+for i = 1:nRuns
+    Tf(a);
+end
 toc
-clear Tf;
-
-%load 10 Tf's
-tic
-Tf = Tffile.Tf(:, 134:144);
-toc
-clear Tf;
-
-%load all Tf's
-tic
-Tf = Tffile.Tf;
-toc
-clear Tf;

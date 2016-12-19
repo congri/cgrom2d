@@ -32,60 +32,38 @@ XNormSqMean = zeros(1, nTrain);
 
 Tf = Tffile.Tf(:, nStart:(nStart + nTrain - 1));        %Finescale temperatures - load partially to save memory
 
-% Compute design matrix for each data point
-[PhiArray, featureFunctionMean] = designMatrix(phi, domainf, domainc, Tffile, 1, nTrain);
-%Normalize design matrix s.t. every feature function has output on the same scale
-PhiArray = normalizeDesignMatrix(PhiArray, featureFunctionMean);
-%colNormPhi is important for normalization of the test dataset in predictions
-save('./data/featureFunctionMean', 'featureFunctionMean', '-ascii');
+%% Compute design matrices
+Phi = DesignMatrix([domainf.nElX domainf.nElY], [domainc.nElX domainc.nElY], phi, Tffile, nStart:(nStart + nTrain - 1));
+Phi = Phi.computeDesignMatrix(domainc.nEl, domainf.nEl);
+%Normalize design matrices
+Phi = Phi.computeFeatureFunctionAbsMean;
+Phi = Phi.normalizeDesignMatrix;
+Phi.saveNormalization;
+%Compute sum_i Phi^T(x_i)^Phi(x_i)
+Phi = Phi.computeSumPhiTPhi;
 
-assert(all(all(all(isfinite(PhiArray)))), 'Error: non-finite design matrix Phi')
-% Compute sum_i Phi^T(x_i)^Phi(x_i)
-sumPhiSq = zeros(numel(phi), numel(phi));
-for i = 1:nTrain
-    sumPhiSq = sumPhiSq + PhiArray(:,:,i)'*PhiArray(:,:,i);
-end
-%shrink finescale domain object to save memory
-domainf = domainf.shrink();
 
 %% EM optimization - main body
 k = 1;          %EM iteration index
 collectData;    %Write initial parametrizations to disk
 
 for k = 2:(maxIterations + 1)
-    for i = 1:nTrain
-        %take MCMC initializations at mode of p_c
-        MCMC(i).Xi_start = PhiArray(:, :, i)*theta_c.theta;
-    end
-    
+
     %% Establish distribution to sample from
-    parfor i = 1:nTrain
+    for i = 1:nTrain
         Tf_i_minus_mu = Tf(:, i) - theta_cf.mu;
         log_qi{i} = @(Xi) log_q_i(Xi, Tf_i_minus_mu, theta_cf, theta_c,...
-            PhiArray(:, :, i), domainc);
+            Phi.designMatrices{i}, domainc);
     end
     
     MonteCarlo = false;
     VI = true;
-    
-    
-    if strcmp(update_qi, 'sequential')
-        pstart = pend + 1;
-        if pstart > nTrain
-            pstart = 1;
-        end
-        pend = pstart + ppool.NumWorkers - 1;
-        if pend > nTrain
-            pend = nTrain;
-        end
-    else
-        pstart = 1;
-        pend = nTrain;
-    end
-    
-    
-    
+
     if MonteCarlo
+        for i = 1:nTrain
+            %take MCMC initializations at mode of p_c
+            MCMC(i).Xi_start = Phi.designMatrices{i}*theta_c.theta;
+        end
         %% Test run for step sizes
         disp('test sampling...')
         parfor i = 1:nTrain
@@ -170,8 +148,22 @@ for k = 2:(maxIterations + 1)
         end
         clear Tc_samples;
     elseif VI
+        
+        if strcmp(update_qi, 'sequential')
+            pstart = pend + 1;
+            if pstart > nTrain
+                pstart = 1;
+            end
+            pend = pstart + ppool.NumWorkers - 1;
+            if pend > nTrain
+                pend = nTrain;
+            end
+        else
+            pstart = 1;
+            pend = nTrain;
+        end
+        
         disp('Finding optimal variational distributions...')
-                
         parfor i = pstart:pend
             [optVarDist{i}, RMsteps{i}] = variationalInference(log_qi{i}, VIparams, initialParamsArray{i});
             initialParamsArray{i} = optVarDist{i}.params;
@@ -231,12 +223,12 @@ for k = 2:(maxIterations + 1)
     %sum_i Phi_i^T <X^i>_qi
     sumPhiTXmean = zeros(numel(phi), 1);
     for i = 1:nTrain
-        sumPhiTXmean = sumPhiTXmean + PhiArray(:,:,i)'*XMean(:, i);
+        sumPhiTXmean = sumPhiTXmean + Phi.designMatrices{i}'*XMean(:, i);
     end
 
     sigma_old = theta_c.sigma;
     [theta_c] = optTheta_c(theta_c, nTrain, domainc.nEl, XNormSqMean,...
-        sumPhiTXmean, sumPhiSq, theta_prior_type, theta_prior_hyperparam,...
+        sumPhiTXmean, Phi.sumPhiTPhi, theta_prior_type, theta_prior_hyperparam,...
         sigma_prior_type, sigma_prior_hyperparam);
     theta_c.sigma = (1 - mix_sigma)*theta_c.sigma + mix_sigma*sigma_old;
     disp('M-step done, current params:')
@@ -244,12 +236,8 @@ for k = 2:(maxIterations + 1)
     curr_theta = [theta_c.theta (1:length(theta_c.theta))']
     curr_sigma = theta_c.sigma
     mean_S = mean(theta_cf.S)
-    Lambda_eff1_mean = exp(PhiArray(:, :, 1)*theta_c.theta)
-    
-    if(mod(k - 1, basisUpdateGap) == 0)
-        %this still needs to be generalized for 2d!
-        [phi, PhiArray, sumPhiSq] = updateBasisFunction(XMean, x, theta, PhiArray, nFine, nCoarse, phi);
-    end
+    Lambda_eff1_mean = exp(Phi.designMatrices{1}*theta_c.theta)
+
     %collect data and write it to disk periodically to save memory
     collectData;
 end

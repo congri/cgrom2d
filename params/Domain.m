@@ -3,8 +3,8 @@ classdef Domain
 
     properties (SetAccess = public)
         
-        nElX = 10;                  %number of finite elements in each direction; not tested for nElX ~= nElY
-        nElY = 10;
+        nElX                        %number of finite elements in each direction; not tested for nElX ~= nElY
+        nElY
         nEl                         %total number of elements
         nNodes                      %total number of nodes
         boundaryNodes               %Nodes on the domain boundary

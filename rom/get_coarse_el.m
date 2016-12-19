@@ -3,8 +3,7 @@ function [E] = get_coarse_el(n_f, n_c, e)
     %coarse model
     %n_f = FOM number of elements, n_c = coarse number of elements, e =
     %fine element number
-    
-    
+        
     %fine elements per coarse mesh
     fine_per_coarse = n_f./n_c;
     %must be integer

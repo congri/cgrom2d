@@ -13,9 +13,9 @@ boundaryConditions;
 
 %% Generate finescale domain
 nf = 128;       %Should be 2^n
-disp('Generate domain object...')
+disp('Generate finescale domain...')
 domainf = Domain(nf, nf, 1, 1);
-domainf = setBoundaries(domainf, [2:(4*nf)], Tb, qb);
+domainf = setBoundaries(domainf, 2:(4*nf), Tb, qb);       %Only fix lower left corner as essential node
 disp('done')
 toc
 

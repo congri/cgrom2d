@@ -2,7 +2,7 @@
 %CHANGE JOBFILE IF YOU CHANGE LINE NUMBERS!
 %Number of training data samples
 nStart = 1; %start training sample in training data file
-nTrain = 48;
+nTrain = 16;
 dt = datestr(now, 'mmddHHMMSS')
 jobname = 'trainModel_nTrain16contrast100'
 
@@ -20,6 +20,8 @@ maxIterations = (basisFunctionUpdates + 1)*basisUpdateGap - 1;
 %% Start value of model parameters
 %Shape function interpolate in W
 theta_cf.W = shapeInterp(domainc, domainf);
+%shrink finescale domain object to save memory
+domainf = domainf.shrink();
 theta_cf.S = (1e-3)*ones(domainf.nNodes, 1);
 theta_cf.Sinv = sparse(1:domainf.nNodes, 1:domainf.nNodes, 1./theta_cf.S);
 %precomputation to save resources
@@ -40,7 +42,7 @@ theta_prior_type = 'hierarchical_laplace';                  %hierarchical_gamma,
 sigma_prior_type = 'none';
 %prior hyperparams; obsolete for no prior
 % theta_prior_hyperparam = [0, 1e-10];                   %a and b params for Gamma hyperprior
-theta_prior_hyperparam = 1;
+theta_prior_hyperparam = 10;
 sigma_prior_hyperparam = 1e3;
 
 %% MCMC options
