@@ -12,7 +12,7 @@ addpath('./computation')
 boundaryConditions;
 
 %% Generate finescale domain
-nf = 128;       %Should be 2^n
+nf = 128;       %Finescale mesh size, should be 2^n
 disp('Generate finescale domain...')
 domainf = Domain(nf, nf, 1, 1);
 domainf = setBoundaries(domainf, 2:(4*nf), Tb, qb);       %Only fix lower left corner as essential node
@@ -21,7 +21,6 @@ toc
 
 %% Finescale data params
 disp('Setting up finescale data parameters...')
-fineData.genData = true;    %generate new dataset?
 fineData.dist = 'correlated_binary';   %uniform, gaussian or binary (dist of log conductivity)
 fineData.nSamples = 15;
 fineData.nTest = 1;
