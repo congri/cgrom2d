@@ -1,20 +1,24 @@
-function [cond, Tf] = genData(domain, fineData)
+function [cond, Tf] = genData(domain, fineData, FD)
 %Generating full order data
 
+fineData
+FD
+pause
+
 %% Draw conductivity/ log conductivity
-if strcmp(fineData.dist, 'uniform')
+if strcmp(FD.distributionType, 'uniform')
     %conductivity uniformly distributed between lo and up
     cond = (fineData.up - fineData.lo)*rand(domain.nEl, fineData.nSamples) + fineData.lo;
-elseif strcmp(fineData.dist, 'gaussian')
+elseif strcmp(FD.distributionType, 'gaussian')
     %log conductivity gaussian distributed
     x = normrnd(fineData.mu, fineData.sigma, domain.nEl, fineData.nSamples);
     cond = exp(x);
-elseif strcmp(fineData.dist, 'binary')
+elseif strcmp(FD.distributionType, 'binary')
     %binary distribution of conductivity (Bernoulli)
     r = rand(domain.nEl, fineData.nSamples);
     cond = fineData.lo*ones(domain.nEl, fineData.nSamples);
     cond(r > fineData.p_lo) = fineData.up;
-elseif strcmp(fineData.dist, 'correlated_binary')
+elseif strcmp(FD.distributionType, 'correlated_binary')
     %Compute coordinates of element centers
     x = (domain.lElX/2):domain.lElX:(1 - (domain.lElX/2));
     y = (domain.lElY/2):domain.lElY:(1 - (domain.lElY/2));
@@ -33,6 +37,7 @@ elseif strcmp(fineData.dist, 'correlated_binary')
     end
     parfor i = 1:(fineData.nSamples + fineData.nTest)
         %use for-loop instead of vectorization to save memory
+        p_lo = norminv(1 - fineData.theoreticalVolumeFraction, 0, fineData.sigma_f2);
         for j = 1:domain.nEl
             ps = p{i}(x(:, j));
             cond{i}(j) = fineData.up*(ps > fineData.p_lo) +...
