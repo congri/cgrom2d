@@ -139,6 +139,7 @@ classdef FinescaleData
             
             if(nargin > 2)
                 disp('saving finescale data...')
+                cond = cell2mat(cond);
                 save(strcat(savepath, ''), 'cond', 'Tf', '-v7.3')    %partial loading only for -v7.3
                 disp('done')
             end

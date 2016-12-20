@@ -2,6 +2,7 @@
 %% Preamble
 tic;    %measure runtime
 clear all;
+datestr(now, 'mmddHHMMSS')  %Print datestring to pipe
 
 addpath('./params')
 addpath('./aux')
@@ -150,6 +151,7 @@ for k = 2:(maxIterations + 1)
     elseif VI
         
         if strcmp(update_qi, 'sequential')
+            %Sequentially update N_threads qi's at a time, then perform M-step
             pstart = pend + 1;
             if pstart > nTrain
                 pstart = 1;
@@ -227,7 +229,7 @@ for k = 2:(maxIterations + 1)
     end
 
     sigma_old = theta_c.sigma;
-    [theta_c] = optTheta_c(theta_c, nTrain, domainc.nEl, XNormSqMean,...
+    theta_c = optTheta_c(theta_c, nTrain, domainc.nEl, XNormSqMean,...
         sumPhiTXmean, Phi.sumPhiTPhi, theta_prior_type, theta_prior_hyperparam,...
         sigma_prior_type, sigma_prior_hyperparam);
     theta_c.sigma = (1 - mix_sigma)*theta_c.sigma + mix_sigma*sigma_old;
@@ -236,7 +238,7 @@ for k = 2:(maxIterations + 1)
     curr_theta = [theta_c.theta (1:length(theta_c.theta))']
     curr_sigma = theta_c.sigma
     mean_S = mean(theta_cf.S)
-    Lambda_eff1_mean = exp(Phi.designMatrices{1}*theta_c.theta)
+    Lambda_eff1_mode = exp(Phi.designMatrices{1}*theta_c.theta)
 
     %collect data and write it to disk periodically to save memory
     collectData;

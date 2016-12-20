@@ -1,7 +1,7 @@
-NF=512
-CORRLENGTH=100
-NTRAIN=1024
-NTEST=256
+NF=128
+CORRLENGTH=5
+NSET1=4
+NSET2=2
 VOLFRAC=0.3	#Theoretical volume fraction
 LOCOND=1
 HICOND=100
@@ -31,14 +31,10 @@ printf "#PBS -N $JOBNAME
 #Switch to job directory
 cd $JOBDIR
 #Set parameters
-sed -i \"34s/.*/    fineData.lo = $LOCOND;/\" ./generateFinescaleData.m
-sed -i \"35s/.*/    fineData.up = $HICOND;   %%Change jobfile if you change this line number!/\" ./generateFinescaleData.m
-sed -i \"41s/.*/            fineData.lx = $CORRLENGTH*domainf.lElX;/\" ./generateFinescaleData.m
-sed -i \"42s/.*/            fineData.ly = $CORRLENGTH*domainf.lElY;/\" ./generateFinescaleData.m
 sed -i \"15s/.*/nf = $NF;       %%Should be 2^n/\" ./generateFinescaleData.m
-sed -i \"26s/.*/fineData.nSamples = $NTRAIN;/\" ./generateFinescaleData.m
-sed -i \"27s/.*/fineData.nTest = $NTEST;/\" ./generateFinescaleData.m
-sed -i \"39s/.*/        fineData.theoreticalVolumeFraction = $VOLFRAC; %%Volume fraction of high conductivity phase/\" ./generateFinescaleData.m
+sed -i \"24s/.*/FD = FinescaleData($LOCOND, $HICOND);/\" ./generateFinescaleData.m
+sed -i \"26s/.*/FD.nSamples = [$NSET1 $NSET2];/\" ./generateFinescaleData.m
+sed -i \"28s/.*/FD.distributionParams = {$VOLFRAC [$CORRLENGTH $CORRLENGTH] 1};/\" ./generateFinescaleData.m
 
 #Run Matlab
 /home/constantin/Software/matlab2016b/bin/matlab -nodesktop -nodisplay -nosplash -r \"generateFinescaleData ; quit;\"" >> job_file.sh
@@ -46,5 +42,6 @@ sed -i \"39s/.*/        fineData.theoreticalVolumeFraction = $VOLFRAC; %%Volume 
 chmod +x job_file.sh
 #directly submit job file
 qsub job_file.sh
+#./job_file.sh
 
 

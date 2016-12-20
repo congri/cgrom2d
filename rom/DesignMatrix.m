@@ -56,8 +56,8 @@ classdef DesignMatrix
             disp('Compute design matrices Phi...')
             
             %load finescale conductivity field
-            conductivity = Phi.dataFile.cond(Phi.dataSamples, :);
-            conductivity = num2cell(conductivity, 2);   %to avoid parallelization communication overhead
+            conductivity = Phi.dataFile.cond(:, Phi.dataSamples);
+            conductivity = num2cell(conductivity, 1);   %to avoid parallelization communication overhead
             nTrain = length(Phi.dataSamples);
             nFeatureFunctions = numel(Phi.featureFunctions);
             phi = Phi.featureFunctions;
@@ -67,7 +67,7 @@ classdef DesignMatrix
             parPoolInit(length(nTrain));
             PhiCell{1} = zeros(nElc, nFeatureFunctions);
             PhiCell = repmat(PhiCell, nTrain, 1);
-            parfor s = 1:nTrain
+            for s = 1:nTrain
                 %inputs belonging to same coarse element are in the same column of xk. They are ordered in
                 %x-direction.
                 PhiCell{s} = zeros(nElc, nFeatureFunctions);

@@ -1,4 +1,4 @@
-function [L] = linealPath(lambdak, pathLength, dir, phase, fineData, nElc, nElf)
+function [L] = linealPath(lambdak, pathLength, dir, phase, phaseConductivity, nElc, nElf)
 %Lineal path function to use as a basis function phi in p_c
 %   lambdak:        fine conductivities in coarse element k
 %   pathLength:     length of path in units of fine elements. Must be smaller than sqrt(nFine/nCoarse)
@@ -12,7 +12,6 @@ function [L] = linealPath(lambdak, pathLength, dir, phase, fineData, nElc, nElf)
 %Check
 % assert(strcmp(fineData.dist, 'binary'), 'Error: linealPath is only a possible basis function if conductivities are binary')
 
-phaseConductivity = [fineData.lo; fineData.up];    %conductivities of the two phases
 lambdakBin = (lambdak == phaseConductivity(phase));
 
 %Fine elements per coarse element in x and y directions

@@ -43,7 +43,7 @@ classdef Domain
     
     methods
         
-        function domainObj = Domain(nElX, nElY, lx, ly)
+        function domainObj = Domain(nElX, nElY)
             %constructor
             if nargin > 0
                 domainObj.nElX = nElX;

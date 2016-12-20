@@ -1,4 +1,4 @@
-function [p_delta_x, p_delta] = poreSizeDensity(lambda, phase, fineData, nElc, nElf)
+function [p_delta_x, p_delta] = poreSizeDensity(lambda, phase, phaseConductivity, nElc, nElf)
 %Pore-size density function of materials
 %   lambdak:        fine conductivities in coarse element k
 %   distance:     length of distance in units of fine elements (pixels). Must be smaller than sqrt(nFine/nCoarse)
@@ -9,8 +9,6 @@ function [p_delta_x, p_delta] = poreSizeDensity(lambda, phase, fineData, nElc, n
 %   Output:
 %       p_delta:          pore size density function to given parameters, see Torquato p. 48
 %       p_delta_x:        x-coordinate (random variable) of pore size density
-
-phaseConductivity = [fineData.lo; fineData.up];    %conductivities of the two phases
 
 %Fine elements per coarse element in x and y directions
 xc = nElf(1)/nElc(1);

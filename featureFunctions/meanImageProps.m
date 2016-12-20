@@ -1,7 +1,7 @@
-function [out] = meanImageProps(lambdaMat, fineData, hilo, property, meanVarMaxMin)
+function [out] = meanImageProps(lambdaMat, conductivities, hilo, property, meanVarMaxMin)
 %Uses built-in Matlab 'regionprops' to return average property values of binary image bubbles
 %   lambda:     2-dim conductivity image
-%   fineData:   fineData structure containing high and low phase conductivity
+%   conductivities: loCond in first, upCOnd in second entry
 %   hilo:       property for high or low phase bubbles?
 %   property:
 %       'Area':     Mean area of bubble
@@ -9,9 +9,9 @@ function [out] = meanImageProps(lambdaMat, fineData, hilo, property, meanVarMaxM
 
 %Convert lambda to binary image
 if strcmp(hilo, 'hi')
-    lambdaMat = (lambdaMat > fineData.lo);
+    lambdaMat = (lambdaMat > conductivities(1));
 elseif strcmp(hilo, 'lo')
-    lambdaMat = (lambdaMat < fineData.up);
+    lambdaMat = (lambdaMat < conductivities(2));
 else
     error('Property of high or low conducting phase?')
 end

@@ -1,4 +1,4 @@
-function [out] = meanExtent(lambdaMat, fineData, hilo, dir, meanOrVar)
+function [out] = meanExtent(lambdaMat, conductivities, hilo, dir, meanOrVar)
 %Uses built-in Matlab 'regionprops' 'Extrema' to calculate mean extent in x and y directions
 %   lambdaMat:     2-dim conductivity image
 %   fineData:   fineData structure containing high and low phase conductivity
@@ -7,9 +7,9 @@ function [out] = meanExtent(lambdaMat, fineData, hilo, dir, meanOrVar)
 
 %Convert lambda to binary image
 if strcmp(hilo, 'hi')
-    lambdaMat = (lambdaMat > fineData.lo);
+    lambdaMat = (lambdaMat > conductivities(1));
 elseif strcmp(hilo, 'lo')
-    lambdaMat = (lambdaMat < fineData.up);
+    lambdaMat = (lambdaMat < conductivities(2));
 else
     error('Property of high or low conducting phase?')
 end

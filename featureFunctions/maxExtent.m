@@ -1,4 +1,4 @@
-function [maxExt] = maxExtent(lambdaMat, fineData, hilo, dir)
+function [maxExt] = maxExtent(lambdaMat, conductivities, hilo, dir)
 %Uses built-in Matlab 'regionprops' 'Extrema' to calculate maximum extent in x and y directions
 %   lambdaMat:     2-dim conductivity image
 %   fineData:   fineData structure containing high and low phase conductivity
@@ -7,9 +7,9 @@ function [maxExt] = maxExtent(lambdaMat, fineData, hilo, dir)
 
 %Convert lambda to binary image
 if strcmp(hilo, 'hi')
-    lambdaMat = (lambdaMat > fineData.lo);
+    lambdaMat = (lambdaMat > conductivities(1));
 elseif strcmp(hilo, 'lo')
-    lambdaMat = (lambdaMat < fineData.up);
+    lambdaMat = (lambdaMat < conductivities(2));
 else
     error('Property of high or low conducting phase?')
 end

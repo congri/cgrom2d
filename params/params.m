@@ -2,9 +2,7 @@
 %CHANGE JOBFILE IF YOU CHANGE LINE NUMBERS!
 %Number of training data samples
 nStart = 1; %start training sample in training data file
-nTrain = 16;
-dt = datestr(now, 'mmddHHMMSS')
-jobname = 'trainModel_nTrain16contrast100'
+nTrain = 4;
 
 %% Initialize coarse domain
 genCoarseDomain;
@@ -38,11 +36,11 @@ theta_c.sigma = 1e-2;
 
 
 %what kind of prior for theta_c
-theta_prior_type = 'hierarchical_laplace';                  %hierarchical_gamma, hierarchical_laplace, laplace, gaussian or none
+theta_prior_type = 'spikeAndSlab';                  %hierarchical_gamma, hierarchical_laplace, laplace, gaussian, spikeAndSlab or none
 sigma_prior_type = 'none';
 %prior hyperparams; obsolete for no prior
 % theta_prior_hyperparam = [0, 1e-10];                   %a and b params for Gamma hyperprior
-theta_prior_hyperparam = 10;
+theta_prior_hyperparam = [.7 1e-6 1e4];
 sigma_prior_hyperparam = 1e3;
 
 %% MCMC options
@@ -52,7 +50,7 @@ MCMC.nThermalization = 0;                            %thermalization steps
 nSamplesBeginning = [40];
 MCMC.nSamples = 40;                                 %number of samples
 MCMC.nGap = 40;                                     %decorrelation gap
-MCMC.Xi_start = log(.5*fineData.lo + .5*fineData.up)*ones(domainc.nEl, 1);
+MCMC.Xi_start = log(.5*loCond + .5*upCond)*ones(domainc.nEl, 1);
 %only for random walk
 MCMC.MALA.stepWidth = .01;
 stepWidth = 2e-0;
@@ -61,7 +59,7 @@ MCMC = repmat(MCMC, nTrain, 1);
 
 %% MCMC options for test chain to find step width
 MCMCstepWidth = MCMC;
-for i = 1:fineData.nSamples
+for i = 1:nTrain
     MCMCstepWidth(i).nSamples = 2;
     MCMCstepWidth(i).nGap = 100;
 end
@@ -75,7 +73,7 @@ mix_theta = 0;
 %% Variational inference params
 dim = domainc.nEl;
 VIparams.family = 'diagonalGaussian';
-initialParamsArray{1} = [log(.5*fineData.lo + .5*fineData.up)*ones(1, domainc.nEl) 15*ones(1, domainc.nEl)];
+initialParamsArray{1} = [log(.5*loCond + .5*upCond)*ones(1, domainc.nEl) 15*ones(1, domainc.nEl)];
 initialParamsArray = repmat(initialParamsArray, nTrain, 1);
 VIparams.nSamples = 10;    %Gradient samples per iteration
 VIparams.inferenceSamples = 100;
